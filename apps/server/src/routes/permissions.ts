@@ -37,7 +37,11 @@ async function getDocumentAndRole(
   const doc = await DocumentModel.findById(documentId).populate('ownerId', 'name email');
   if (!doc) return { doc: null, role: null };
 
-  const ownerIdStr = doc.ownerId instanceof Types.ObjectId ? doc.ownerId.toString() : (doc.ownerId as any)._id.toString();
+  const ownerIdStr = doc.ownerId?._id
+    ? doc.ownerId._id.toString()
+    : doc.ownerId
+    ? doc.ownerId.toString()
+    : '';
   if (ownerIdStr === userId) {
     return { doc, role: 'owner' };
   }
@@ -45,6 +49,13 @@ async function getDocumentAndRole(
   const perm = await PermissionModel.findOne({ documentId: doc._id, userId });
   if (perm) {
     return { doc, role: perm.role };
+  }
+
+  if (doc.publicAccess === 'edit') {
+    return { doc, role: 'editor' };
+  }
+  if (doc.publicAccess === 'view' || !doc.publicAccess) {
+    return { doc, role: 'viewer' };
   }
 
   return { doc, role: null };
@@ -72,12 +83,15 @@ permissionsRouter.get('/', async (req: AuthenticatedRequest, res: Response): Pro
       .lean();
 
     const ownerUser = doc.ownerId as any;
+    const ownerUserId = ownerUser?._id ? ownerUser._id.toString() : (ownerUser?.toString() || 'unknown');
+    const ownerName = ownerUser?.name || 'Document Owner';
+    const ownerEmail = ownerUser?.email || '';
 
     const collaborators = [
       {
-        userId: ownerUser._id.toString(),
-        name: ownerUser.name,
-        email: ownerUser.email,
+        userId: ownerUserId,
+        name: ownerName,
+        email: ownerEmail,
         role: 'owner',
         isOwner: true,
       },
@@ -100,6 +114,7 @@ permissionsRouter.get('/', async (req: AuthenticatedRequest, res: Response): Pro
     res.status(200).json({
       collaborators,
       currentUserRole: role,
+      publicAccess: doc.publicAccess || 'view',
     });
   } catch (err) {
     console.error('[permissions] Get error:', err);
@@ -282,3 +297,41 @@ permissionsRouter.delete('/:userId', async (req: AuthenticatedRequest, res: Resp
     res.status(500).json({ error: 'Failed to remove collaborator' });
   }
 });
+
+// PATCH /documents/:id/permissions/public-access - Change link sharing mode (owner only)
+permissionsRouter.patch('/public-access', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const documentId = getParamId(req.params.id);
+  if (!documentId) {
+    res.status(404).json({ error: 'Document not found' });
+    return;
+  }
+
+  const parseResult = z.object({
+    publicAccess: z.enum(['private', 'view', 'edit']),
+  }).safeParse(req.body);
+
+  if (!parseResult.success) {
+    res.status(400).json({ error: 'Invalid public access level. Allowed: private, view, edit' });
+    return;
+  }
+
+  try {
+    const { doc, role } = await getDocumentAndRole(documentId, req.user?.id!);
+    if (!doc || role !== 'owner') {
+      res.status(403).json({ error: 'Only the document owner can change access settings' });
+      return;
+    }
+
+    doc.publicAccess = parseResult.data.publicAccess;
+    await doc.save();
+
+    res.status(200).json({
+      message: 'Access setting updated successfully',
+      publicAccess: doc.publicAccess,
+    });
+  } catch (err) {
+    console.error('[permissions] Public access update error:', err);
+    res.status(500).json({ error: 'Failed to update access setting' });
+  }
+});
+

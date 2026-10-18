@@ -26,7 +26,7 @@ async function getUserRole(
   documentId: string,
   userId: string
 ): Promise<'owner' | 'editor' | 'viewer' | null> {
-  const doc = await DocumentModel.findById(documentId).select('ownerId');
+  const doc = await DocumentModel.findById(documentId).select('ownerId publicAccess');
   if (!doc) return null;
 
   if (doc.ownerId.toString() === userId) {
@@ -34,7 +34,12 @@ async function getUserRole(
   }
 
   const perm = await PermissionModel.findOne({ documentId, userId });
-  return perm ? perm.role : null;
+  if (perm) return perm.role;
+
+  if (doc.publicAccess === 'edit') return 'editor';
+  if (doc.publicAccess === 'view' || !doc.publicAccess) return 'viewer';
+
+  return null;
 }
 
 const saveVersionSchema = z.object({
@@ -244,3 +249,38 @@ versionsRouter.post('/:versionId/restore', async (req: AuthenticatedRequest, res
     res.status(500).json({ error: 'Failed to restore version' });
   }
 });
+
+// DELETE /documents/:id/versions/:versionId - Delete a version snapshot (owner or editor)
+versionsRouter.delete('/:versionId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const documentId = getParamId(req.params.id);
+  const versionId = getParamId(req.params.versionId);
+
+  if (!documentId || !versionId) {
+    res.status(404).json({ error: 'Version not found' });
+    return;
+  }
+
+  try {
+    const role = await getUserRole(documentId, req.user!.id);
+    if (!role || (role !== 'owner' && role !== 'editor')) {
+      res.status(403).json({ error: 'Only owners and editors can delete versions' });
+      return;
+    }
+
+    const deleted = await VersionModel.findOneAndDelete({
+      _id: versionId,
+      documentId,
+    });
+
+    if (!deleted) {
+      res.status(404).json({ error: 'Version not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Version deleted successfully', versionId });
+  } catch (err) {
+    console.error('[versions] Delete error:', err);
+    res.status(500).json({ error: 'Failed to delete version' });
+  }
+});
+

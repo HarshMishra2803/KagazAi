@@ -42,7 +42,9 @@ app.use(express.json());
 
 // Routes
 app.use('/auth', authRouter);
+app.use('/api/auth', authRouter);
 app.use('/documents', documentRouter);
+app.use('/api/documents', documentRouter);
 
 app.get('/health', (_req: Request, res: Response) => {
   const dbConnected = isDbConnected();

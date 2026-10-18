@@ -212,25 +212,14 @@ function DocumentView({
 
           <div className="flex items-center gap-3 shrink-0">
             {/* Share / Collaborators Button */}
-            {document.role === 'owner' ? (
-              <button
-                type="button"
-                onClick={() => setIsShareOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>Share</span>
-              </button>
-            ) : document.role === 'editor' ? (
-              <button
-                type="button"
-                onClick={() => setIsShareOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-700 bg-white border border-neutral-300 hover:bg-neutral-50 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>Collaborators</span>
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => setIsShareOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900 shadow-xs"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Share</span>
+            </button>
 
             {/* Version History Button */}
             <button

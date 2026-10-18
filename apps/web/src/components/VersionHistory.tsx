@@ -13,6 +13,7 @@ import {
   FileText,
   User,
   Check,
+  Trash2,
 } from 'lucide-react';
 
 export interface VersionSummary {
@@ -183,6 +184,37 @@ export function VersionHistory({
     }
   };
 
+  const handleDeleteVersion = async (e: React.MouseEvent, versionId: string, versionLabel: string) => {
+    e.stopPropagation();
+    const confirmed = window.confirm(`Delete version snapshot "${versionLabel}"?`);
+    if (!confirmed) return;
+
+    try {
+      setError(null);
+      const res = await fetch(`${API_URL}/documents/${documentId}/versions/${versionId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to delete version');
+      }
+
+      setSuccess(`Version "${versionLabel}" deleted.`);
+      setVersions((prev) => prev.filter((v) => v._id !== versionId));
+      if (selectedVersionId === versionId) {
+        setSelectedVersionId(versions.find((v) => v._id !== versionId)?._id || null);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to delete version');
+      }
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
@@ -340,6 +372,17 @@ export function VersionHistory({
                       <span className="font-semibold text-neutral-900 truncate">
                         {v.label}
                       </span>
+                      {canManageVersions && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteVersion(e, v._id, v.label)}
+                          className="p-1 text-neutral-400 hover:text-red-600 rounded hover:bg-neutral-200/60 focus:outline-hidden focus:ring-2 focus:ring-red-600 transition-colors shrink-0"
+                          title="Delete version snapshot"
+                          aria-label={`Delete version ${v.label}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
 
                     <div className="mt-1 flex items-center gap-1.5 text-[11px] text-neutral-500">

@@ -118,6 +118,10 @@ export function createHocuspocusServer(port: number = 1234): Server {
           });
           if (perm) {
             role = perm.role;
+          } else if (doc.publicAccess === 'edit') {
+            role = 'editor';
+          } else if (doc.publicAccess === 'view' || !doc.publicAccess) {
+            role = 'viewer';
           }
         }
 
@@ -158,9 +162,22 @@ export function createHocuspocusServer(port: number = 1234): Server {
         const doc = await DocumentModel.findById(documentName);
 
         if (doc && doc.content && doc.content.length > 0) {
-          console.log(`[hocuspocus] Loaded document ${documentName} from MongoDB (${doc.content.length} bytes)`);
-          // Return binary state as Uint8Array for Hocuspocus to initialize the Y.Doc
-          return new Uint8Array(doc.content);
+          try {
+            const candidateUpdate = new Uint8Array(doc.content);
+            // Verify binary update is strictly decodable before passing to Hocuspocus
+            const testDoc = new Y.Doc();
+            Y.applyUpdate(testDoc, candidateUpdate);
+            testDoc.destroy();
+
+            console.log(`[hocuspocus] Loaded document ${documentName} from MongoDB (${doc.content.length} bytes)`);
+            return candidateUpdate;
+          } catch (decodeErr) {
+            console.warn(
+              `[hocuspocus] Document ${documentName} had malformed binary content in MongoDB. Initializing fresh Y.Doc to prevent client crash loops:`,
+              decodeErr
+            );
+            return null;
+          }
         }
 
         console.log(`[hocuspocus] New document or empty content for ${documentName}; starting fresh Y.Doc`);
@@ -277,35 +294,42 @@ export async function restoreVersionToLiveDocument(
   const historicalFrag = historicalDoc.getXmlFragment('default');
   const plainText = extractPlainTextFromDoc(historicalDoc);
 
+  // 2. Persist restored state immediately to MongoDB so newly joined clients load it reliably
+  const buffer = Buffer.from(versionState);
+  await DocumentModel.findByIdAndUpdate(documentId, {
+    content: buffer,
+    plainText,
+  });
+
+  // 3. Apply live forward-delta to currently active in-memory room
   const server = getHocuspocusServer();
   if (server) {
-    // Open direct connection to live room on Hocuspocus server
-    const connection = await server.hocuspocus.openDirectConnection(documentId, {
-      user: { id: restoredByUserId, name: 'System Restore', email: 'system@kagaz.ai' },
-    });
-
     try {
-      await connection.transact((liveDoc: Y.Doc) => {
-        const liveFrag = liveDoc.getXmlFragment('default');
-        // Clear current live contents
-        liveFrag.delete(0, liveFrag.length);
+      const hocuspocusCore = (server as any).hocuspocus || server;
+      if (typeof hocuspocusCore.openDirectConnection === 'function') {
+        const connection = await hocuspocusCore.openDirectConnection(documentId, {
+          user: { id: restoredByUserId, name: 'System Restore', email: 'system@kagaz.ai' },
+        });
 
-        // Clone historical nodes into live fragment as a forward delta
-        const clones: any[] = [];
-        for (let i = 0; i < historicalFrag.length; i++) {
-          clones.push(cloneYjsItem(historicalFrag.get(i)));
+        try {
+          await connection.transact((liveDoc: Y.Doc) => {
+            const liveFrag = liveDoc.getXmlFragment('default');
+            // Clear current live contents
+            liveFrag.delete(0, liveFrag.length);
+
+            // Clone historical nodes into live fragment as a forward delta
+            const clones: any[] = [];
+            for (let i = 0; i < historicalFrag.length; i++) {
+              clones.push(cloneYjsItem(historicalFrag.get(i)));
+            }
+            liveFrag.insert(0, clones.filter(Boolean));
+          });
+        } finally {
+          connection.disconnect();
         }
-        liveFrag.insert(0, clones.filter(Boolean));
-      });
-    } finally {
-      connection.disconnect();
+      }
+    } catch (liveErr) {
+      console.warn(`[hocuspocus] Live socket forward-delta skipped (document saved to DB):`, liveErr);
     }
-  } else {
-    // Fallback if Hocuspocus server instance is not yet ready
-    const buffer = Buffer.from(versionState);
-    await DocumentModel.findByIdAndUpdate(documentId, {
-      content: buffer,
-      plainText,
-    });
   }
 }

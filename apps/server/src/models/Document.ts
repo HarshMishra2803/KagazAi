@@ -3,6 +3,7 @@ import { Schema, model, Document as MongooseDocument, Types } from 'mongoose';
 export interface IDocument extends MongooseDocument {
   title: string;
   ownerId: Types.ObjectId;
+  publicAccess: 'private' | 'view' | 'edit';
   content?: Buffer | null;
   plainText?: string;
   createdAt: Date;
@@ -23,6 +24,11 @@ const documentSchema = new Schema<IDocument>(
       ref: 'User',
       required: true,
       index: true, // Indexed for O(log N) query performance per owner
+    },
+    publicAccess: {
+      type: String,
+      enum: ['private', 'view', 'edit'],
+      default: 'view', // 'private' = only explicit collaborators; 'view' = anyone with link can view; 'edit' = anyone with link can edit
     },
     content: {
       type: Buffer,

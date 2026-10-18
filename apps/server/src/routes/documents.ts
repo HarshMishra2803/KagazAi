@@ -143,6 +143,26 @@ documentRouter.get('/:id', async (req: AuthenticatedRequest, res: Response): Pro
 
       if (perm) {
         role = perm.role;
+      } else if (document.publicAccess === 'edit') {
+        role = 'editor';
+        // Auto-record permission for link visitor so document appears on their dashboard
+        try {
+          await PermissionModel.findOneAndUpdate(
+            { documentId: id, userId },
+            { role: 'editor' },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          );
+        } catch (_) {}
+      } else if (document.publicAccess === 'view' || !document.publicAccess) {
+        role = 'viewer';
+        // Auto-record permission for link visitor so document appears on their dashboard
+        try {
+          await PermissionModel.findOneAndUpdate(
+            { documentId: id, userId },
+            { role: 'viewer' },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          );
+        } catch (_) {}
       }
     }
 
@@ -202,6 +222,10 @@ documentRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response): P
 
       if (perm) {
         role = perm.role;
+      } else if (document.publicAccess === 'edit') {
+        role = 'editor';
+      } else if (document.publicAccess === 'view' || !document.publicAccess) {
+        role = 'viewer';
       }
     }
 
