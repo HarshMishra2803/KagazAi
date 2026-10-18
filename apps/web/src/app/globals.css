@@ -105,3 +105,38 @@
 .tiptap a:hover {
   color: #525252;
 }
+
+/* Collaborative Cursors & Selections */
+.ProseMirror .ProseMirror-yjs-cursor {
+  position: relative;
+  margin-left: -1px;
+  margin-right: -1px;
+  border-left: 2px solid;
+  border-right: 0;
+  border-color: inherit;
+  word-break: normal;
+  pointer-events: none;
+}
+
+.ProseMirror .ProseMirror-yjs-cursor > div {
+  position: absolute;
+  top: -1.4em;
+  left: -2px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: normal;
+  user-select: none;
+  color: #ffffff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+}
+
+.ProseMirror .ProseMirror-yjs-selection {
+  opacity: 0.25;
+  border-radius: 2px;
+}
+

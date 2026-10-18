@@ -7,19 +7,38 @@ import Link from '@tiptap/extension-link';
 import Collaboration from '@tiptap/extension-collaboration';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import { EditorToolbar } from './EditorToolbar';
-import { Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { CollaborationCursor } from './CollaborationCursorExtension';
+import { useAuth } from '../context/AuthContext';
+import { getDeterministicColor, getInitials } from '../utils/presence';
+import { Wifi, WifiOff, Loader2, Users } from 'lucide-react';
 
 interface CollaborativeEditorProps {
   documentId: string;
   wsToken: string;
 }
 
+interface Collaborator {
+  clientId: number;
+  name: string;
+  color: string;
+  isCurrentUser: boolean;
+}
+
 export function CollaborativeEditor({
   documentId,
   wsToken,
 }: CollaborativeEditorProps) {
+  const { user } = useAuth();
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [isSimulatedOffline, setIsSimulatedOffline] = useState(false);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+
+  // Compute stable profile attributes for deterministic cursor appearance
+  const currentUser = useMemo(() => {
+    const name = user?.name || 'Anonymous User';
+    const color = getDeterministicColor(user?.id || user?.email || 'guest');
+    return { name, color };
+  }, [user]);
 
   const provider = useMemo(() => {
     const collabUrl = process.env.NEXT_PUBLIC_COLLAB_URL || 'ws://localhost:1234';
@@ -45,6 +64,42 @@ export function CollaborativeEditor({
     };
   }, [provider]);
 
+  // Synchronize presence awareness and track active collaborators
+  useEffect(() => {
+    if (!provider || !provider.awareness) return;
+
+    const awareness = provider.awareness;
+
+    // Set local awareness state
+    awareness.setLocalStateField('user', currentUser);
+
+    const updateCollaborators = () => {
+      const states = awareness.getStates();
+      const currentClientId = awareness.clientID;
+      const list: Collaborator[] = [];
+
+      states.forEach((state: any, clientId: number) => {
+        if (state && state.user && state.user.name) {
+          list.push({
+            clientId,
+            name: state.user.name,
+            color: state.user.color || '#2563eb',
+            isCurrentUser: clientId === currentClientId,
+          });
+        }
+      });
+
+      setCollaborators(list);
+    };
+
+    updateCollaborators();
+    awareness.on('change', updateCollaborators);
+
+    return () => {
+      awareness.off('change', updateCollaborators);
+    };
+  }, [provider, currentUser]);
+
   const toggleConnection = () => {
     if (isSimulatedOffline) {
       provider.connect();
@@ -68,6 +123,10 @@ export function CollaborativeEditor({
         Collaboration.configure({
           document: provider.document,
         }),
+        CollaborationCursor.configure({
+          provider,
+          user: currentUser,
+        }),
         Link.configure({
           openOnClick: false,
           HTMLAttributes: {
@@ -83,14 +142,14 @@ export function CollaborativeEditor({
         },
       },
     },
-    [provider]
+    [provider, currentUser]
   );
 
   return (
     <div className="w-full space-y-3">
-      {/* Collaboration Connection Bar */}
+      {/* Collaboration Connection & Presence Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-3.5 py-2 bg-white border border-neutral-200 rounded-md shadow-xs text-xs">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {status === 'connected' ? (
             <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -108,12 +167,32 @@ export function CollaborativeEditor({
             </span>
           )}
 
-          <span className="text-neutral-500 hidden sm:inline">
-            Room: <code className="font-mono text-neutral-800">{documentId}</code>
-          </span>
+          {/* Active Collaborators Presence Bar */}
+          <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
+            <div className="flex items-center -space-x-1.5 overflow-hidden">
+              {collaborators.map((c) => (
+                <div
+                  key={c.clientId}
+                  style={{ backgroundColor: c.color }}
+                  className="relative inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-semibold text-white ring-2 ring-white shadow-xs select-none transition-transform hover:scale-110 hover:z-10 cursor-default"
+                  title={c.isCurrentUser ? `${c.name} (You)` : c.name}
+                >
+                  {getInitials(c.name)}
+                </div>
+              ))}
+            </div>
+
+            <span className="text-neutral-500 text-[11px] font-medium hidden sm:inline">
+              {collaborators.length} {collaborators.length === 1 ? 'collaborator' : 'collaborators'}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="text-neutral-500 hidden md:inline">
+            Room: <code className="font-mono text-neutral-800">{documentId.substring(0, 8)}...</code>
+          </span>
+
           <button
             type="button"
             onClick={toggleConnection}
@@ -149,3 +228,4 @@ export function CollaborativeEditor({
     </div>
   );
 }
+
