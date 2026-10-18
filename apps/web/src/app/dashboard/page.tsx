@@ -427,9 +427,12 @@ export default function DashboardPage() {
                         </div>
                       ) : (
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-sm font-medium text-neutral-900 truncate">
+                          <Link
+                            href={`/doc/${doc._id}`}
+                            className="text-sm font-medium text-neutral-900 hover:text-neutral-700 hover:underline block truncate focus:outline-hidden focus:ring-2 focus:ring-neutral-900 rounded"
+                          >
                             {doc.title}
-                          </h4>
+                          </Link>
                           <div className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-500">
                             <Clock className="w-3 h-3 text-neutral-400" />
                             <span>Updated {formatDate(doc.updatedAt)}</span>
