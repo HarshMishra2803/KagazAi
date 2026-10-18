@@ -1,34 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KagazAi Web Client (`@kagazai/web`)
 
-## Getting Started
+Next.js App Router frontend for KagazAi, a real-time collaborative document editor.
 
-First, run the development server:
+## Architecture
+
+- **Framework**: Next.js 16 (App Router, React 19, TypeScript strict mode)
+- **Editor**: TipTap with StarterKit, Link, and Collaboration extensions
+- **Real-time Sync**: Yjs CRDT via `@hocuspocus/provider` WebSocket transport
+- **Presence**: Awareness protocol with deterministic color hashing and initials avatars
+- **Comments**: Inline TipTap marks (`CommentMark`) with threaded discussion panel
+- **Styling**: Tailwind CSS with custom neutral palette, 4px to 8px border radius, and WCAG AA contrast
+
+## Routes
+
+- `/`: Landing page with live editor preview, feature matrix, and architecture summary
+- `/login`: User authentication with httpOnly cookie session
+- `/register`: Account registration with password hashing and terms acceptance
+- `/dashboard`: Document management (create, rename, delete, open)
+- `/doc/[id]`: Real-time collaborative editor with toolbar, sharing modal, version history, and comments
+- `/privacy`: Data collection and privacy policy
+- `/terms`: Terms of service and intellectual property disclaimer
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_API_URL=http://localhost:5001
+NEXT_PUBLIC_WS_URL=ws://localhost:1234
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Run local dev server with Turbopack
+npm run dev
 
-## Learn More
+# Production build
+npm run build
 
-To learn more about Next.js, take a look at the following resources:
+# Start production server
+npm run start
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Lint check
+npm run lint
+```

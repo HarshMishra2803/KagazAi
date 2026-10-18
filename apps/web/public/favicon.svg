@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Document body background -->
+  <rect width="32" height="32" rx="6" fill="#171717"/>
+  <!-- Paper sheet shape with folded corner -->
+  <path d="M9 7C9 5.89543 9.89543 5 11 5H18L23 10V25C23 26.1046 22.1046 27 21 27H11C9.89543 27 9 26.1046 9 25V7Z" fill="#FAFAFA"/>
+  <!-- Folded corner flap -->
+  <path d="M18 5V10H23L18 5Z" fill="#D4D4D4"/>
+  <!-- Text lines representing Kagaz document content -->
+  <line x1="12" y1="14" x2="20" y2="14" stroke="#171717" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="12" y1="18" x2="20" y2="18" stroke="#171717" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="12" y1="22" x2="16" y2="22" stroke="#525252" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

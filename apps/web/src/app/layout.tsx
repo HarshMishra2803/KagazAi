@@ -3,8 +3,13 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "KagazAi",
-  description: "Real-time collaborative document editor",
+  title: "KagazAi - Real-time Collaborative Document Editor",
+  description: "Real-time collaborative document editor for notes, assignments, and reports with live CRDT synchronization.",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

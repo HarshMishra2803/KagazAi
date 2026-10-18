@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180" fill="none">
+  <!-- Rounded container background -->
+  <rect width="180" height="180" rx="36" fill="#171717"/>
+  <!-- Paper document sheet with folded corner -->
+  <path d="M50 36C50 31.5817 53.5817 28 58 28H100L130 58V144C130 148.418 126.418 152 122 152H58C53.5817 152 50 148.418 50 144V36Z" fill="#FAFAFA"/>
+  <!-- Folded corner flap -->
+  <path d="M100 28V58H130L100 28Z" fill="#D4D4D4"/>
+  <!-- Clean document content lines -->
+  <line x1="68" y1="80" x2="112" y2="80" stroke="#171717" stroke-width="8" stroke-linecap="round"/>
+  <line x1="68" y1="102" x2="112" y2="102" stroke="#171717" stroke-width="8" stroke-linecap="round"/>
+  <line x1="68" y1="124" x2="94" y2="124" stroke="#525252" stroke-width="8" stroke-linecap="round"/>
+</svg>
