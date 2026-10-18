@@ -329,6 +329,10 @@ export function CollaborativeEditor({
       onDisconnect: () => {
         setStatus('disconnected');
       },
+      onAuthenticationFailed: () => {
+        setStatus('disconnected');
+        p.disconnect();
+      },
     });
 
     setProvider(p);
