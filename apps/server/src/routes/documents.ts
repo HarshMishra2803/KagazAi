@@ -4,8 +4,10 @@ import { Types } from 'mongoose';
 import { DocumentModel } from '../models/Document';
 import { PermissionModel } from '../models/Permission';
 import { VersionModel } from '../models/Version';
+import { CommentModel } from '../models/Comment';
 import { permissionsRouter } from './permissions';
 import { versionsRouter } from './versions';
+import { commentsRouter } from './comments';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 
 export const documentRouter = Router();
@@ -18,6 +20,9 @@ documentRouter.use('/:id/permissions', permissionsRouter);
 
 // Mount nested versions router on /documents/:id/versions
 documentRouter.use('/:id/versions', versionsRouter);
+
+// Mount nested comments router on /documents/:id/comments
+documentRouter.use('/:id/comments', commentsRouter);
 
 const renameSchema = z.object({
   title: z
@@ -249,10 +254,11 @@ documentRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    // Delete document and all associated permissions and versions
+    // Delete document and all associated permissions, versions, and comments
     await DocumentModel.findByIdAndDelete(id);
     await PermissionModel.deleteMany({ documentId: id });
     await VersionModel.deleteMany({ documentId: id });
+    await CommentModel.deleteMany({ documentId: id });
 
     res.status(200).json({ message: 'Document deleted successfully', id });
   } catch (err) {

@@ -8,6 +8,7 @@ import Collaboration from '@tiptap/extension-collaboration';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import { EditorToolbar } from './EditorToolbar';
 import { CollaborationCursor } from './CollaborationCursorExtension';
+import { CommentMark } from './CommentMarkExtension';
 import { useAuth } from '../context/AuthContext';
 import { getDeterministicColor, getInitials } from '../utils/presence';
 import { Wifi, WifiOff, Loader2, Users } from 'lucide-react';
@@ -16,6 +17,9 @@ interface CollaborativeEditorProps {
   documentId: string;
   wsToken: string;
   role?: 'owner' | 'editor' | 'viewer';
+  activeCommentId?: string | null;
+  onSelectComment?: (commentId: string | null) => void;
+  onAddCommentRequest?: (commentId: string) => void;
 }
 
 interface Collaborator {
@@ -29,6 +33,9 @@ export function CollaborativeEditor({
   documentId,
   wsToken,
   role = 'owner',
+  activeCommentId = null,
+  onSelectComment,
+  onAddCommentRequest,
 }: CollaborativeEditorProps) {
   const { user } = useAuth();
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
@@ -129,6 +136,7 @@ export function CollaborativeEditor({
           provider,
           user: currentUser,
         }),
+        CommentMark,
         Link.configure({
           openOnClick: false,
           HTMLAttributes: {
@@ -143,9 +151,21 @@ export function CollaborativeEditor({
           class:
             'min-h-[500px] w-full p-8 bg-white border border-neutral-200 rounded-md focus:outline-hidden prose prose-neutral max-w-none text-neutral-900 leading-relaxed font-sans shadow-xs',
         },
+        handleClick: (_view, _pos, event) => {
+          const target = event.target as HTMLElement | null;
+          const commentEl = target?.closest('.kagaz-comment-highlight');
+          if (commentEl) {
+            const commentId = commentEl.getAttribute('data-comment-id');
+            if (commentId && onSelectComment) {
+              onSelectComment(commentId);
+              return true;
+            }
+          }
+          return false;
+        },
       },
     },
-    [provider, currentUser, role]
+    [provider, currentUser, role, onSelectComment]
   );
 
   // Synchronize TipTap editable status if role changes
@@ -154,6 +174,34 @@ export function CollaborativeEditor({
       editor.setEditable(role !== 'viewer');
     }
   }, [editor, role]);
+
+  // Synchronize active comment styling in DOM
+  useEffect(() => {
+    if (!editor) return;
+    const marks = document.querySelectorAll('.kagaz-comment-highlight');
+    marks.forEach((el) => {
+      if (activeCommentId && el.getAttribute('data-comment-id') === activeCommentId) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
+  }, [activeCommentId, editor]);
+
+  // Handler for creating an inline comment mark on current selection
+  const handleAddComment = () => {
+    if (!editor || role === 'viewer') return;
+    const { empty } = editor.state.selection;
+    if (empty) {
+      alert('Please select some text before adding a comment.');
+      return;
+    }
+    const commentId = `c_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    editor.chain().focus().setComment({ commentId }).run();
+    if (onAddCommentRequest) {
+      onAddCommentRequest(commentId);
+    }
+  };
 
   return (
     <div className="w-full space-y-3">
@@ -229,7 +277,11 @@ export function CollaborativeEditor({
       </div>
 
       {/* Editor Toolbar */}
-      <EditorToolbar editor={editor} readOnly={role === 'viewer'} />
+      <EditorToolbar
+        editor={editor}
+        readOnly={role === 'viewer'}
+        onAddComment={role !== 'viewer' ? handleAddComment : undefined}
+      />
 
       {/* Editor Content Area */}
       <div className="editor-paper">

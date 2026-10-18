@@ -140,3 +140,18 @@
   border-radius: 2px;
 }
 
+/* Inline Comment Highlights */
+.kagaz-comment-highlight {
+  background-color: #fef08a;
+  border-bottom: 2px dashed #ca8a04;
+  padding: 1px 0;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.kagaz-comment-highlight:hover,
+.kagaz-comment-highlight.active {
+  background-color: #fde047;
+  border-bottom-style: solid;
+}
+

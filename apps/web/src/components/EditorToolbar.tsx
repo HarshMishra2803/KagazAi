@@ -16,14 +16,20 @@ import {
   Undo2,
   Redo2,
   Eye,
+  MessageSquare,
 } from 'lucide-react';
 
 interface EditorToolbarProps {
   editor: Editor | null;
   readOnly?: boolean;
+  onAddComment?: () => void;
 }
 
-export function EditorToolbar({ editor, readOnly = false }: EditorToolbarProps) {
+export function EditorToolbar({
+  editor,
+  readOnly = false,
+  onAddComment,
+}: EditorToolbarProps) {
   if (!editor) {
     return null;
   }
@@ -206,6 +212,22 @@ export function EditorToolbar({ editor, readOnly = false }: EditorToolbarProps) 
       >
         <Link2 className="w-4 h-4" />
       </button>
+
+      {/* Comment */}
+      {onAddComment && (
+        <>
+          {divider}
+          <button
+            type="button"
+            onClick={onAddComment}
+            className={buttonClass(false)}
+            title="Add Comment on Selection"
+            aria-label="Add Comment"
+          >
+            <MessageSquare className="w-4 h-4" />
+          </button>
+        </>
+      )}
     </div>
   );
 }

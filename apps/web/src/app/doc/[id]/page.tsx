@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { CollaborativeEditor } from '@/components/CollaborativeEditor';
 import { ShareDialog } from '@/components/ShareDialog';
 import { VersionHistory } from '@/components/VersionHistory';
+import { CommentsPanel } from '@/components/CommentsPanel';
 import {
   ArrowLeft,
   AlertCircle,
@@ -18,6 +19,7 @@ import {
   Share2,
   Eye,
   History,
+  MessageSquare,
 } from 'lucide-react';
 
 interface DocumentData {
@@ -46,6 +48,9 @@ function DocumentView({
   const [error, setError] = useState<string | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const [pendingCommentId, setPendingCommentId] = useState<string | null>(null);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -238,6 +243,21 @@ function DocumentView({
               <span className="hidden sm:inline">History</span>
             </button>
 
+            {/* Comments Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsCommentsOpen(!isCommentsOpen)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900 ${
+                isCommentsOpen
+                  ? 'bg-neutral-900 text-white'
+                  : 'bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-50'
+              }`}
+              title="Toggle comments panel"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Comments</span>
+            </button>
+
             <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-neutral-600 font-medium bg-neutral-100 px-2 py-1 rounded">
               <Users className="w-3.5 h-3.5 text-neutral-500" />
               CRDT Sync (Yjs)
@@ -267,6 +287,18 @@ function DocumentView({
           documentId={document._id}
           wsToken={wsToken}
           role={document.role || 'viewer'}
+          activeCommentId={activeCommentId}
+          onSelectComment={(commentId) => {
+            setActiveCommentId(commentId);
+            if (commentId) {
+              setIsCommentsOpen(true);
+            }
+          }}
+          onAddCommentRequest={(commentId) => {
+            setPendingCommentId(commentId);
+            setActiveCommentId(commentId);
+            setIsCommentsOpen(true);
+          }}
         />
       </main>
 
@@ -284,6 +316,22 @@ function DocumentView({
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         canManageVersions={document.role === 'owner' || document.role === 'editor'}
+      />
+
+      {/* Comments Sidebar Panel */}
+      <CommentsPanel
+        documentId={document._id}
+        isOpen={isCommentsOpen}
+        onClose={() => {
+          setIsCommentsOpen(false);
+          setActiveCommentId(null);
+          setPendingCommentId(null);
+        }}
+        canComment={document.role === 'owner' || document.role === 'editor'}
+        activeCommentId={activeCommentId}
+        onSelectComment={setActiveCommentId}
+        pendingCommentId={pendingCommentId}
+        onCancelPendingComment={() => setPendingCommentId(null)}
       />
     </div>
   );
