@@ -1,0 +1,42 @@
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { connectDB, isDbConnected } from './db';
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5001;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/kagazai';
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+
+app.use(cors({
+  origin: CLIENT_URL,
+  credentials: true,
+}));
+
+app.use(express.json());
+
+app.get('/health', (_req: Request, res: Response) => {
+  const dbConnected = isDbConnected();
+  res.status(dbConnected ? 200 : 503).json({
+    status: dbConnected ? 'ok' : 'degraded',
+    app: 'KagazAi Server',
+    database: dbConnected ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+async function startServer(): Promise<void> {
+  try {
+    await connectDB(MONGODB_URI);
+  } catch {
+    console.warn('[db] Initial database connection failed. Server will continue to run.');
+  }
+
+  app.listen(PORT, () => {
+    console.log(`[server] KagazAi server listening on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
