@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import { connectDB, isDbConnected } from './db';
 import { authRouter } from './routes/auth';
+import { documentRouter } from './routes/documents';
 
 // Monorepo-aware .env loader: checks cwd, apps/server directory, and parent paths
 const envCandidates = [
@@ -39,6 +40,7 @@ app.use(express.json());
 
 // Routes
 app.use('/auth', authRouter);
+app.use('/documents', documentRouter);
 
 app.get('/health', (_req: Request, res: Response) => {
   const dbConnected = isDbConnected();
