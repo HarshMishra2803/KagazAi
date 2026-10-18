@@ -11,10 +11,11 @@ const COOKIE_NAME = 'token';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 function getCookieOptions() {
+  const isProd = process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
+    secure: isProd,
+    sameSite: isProd ? ('none' as const) : ('lax' as const),
     maxAge: COOKIE_MAX_AGE,
     path: '/',
   };
@@ -133,12 +134,7 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
 
 // POST /auth/logout
 authRouter.post('/logout', (_req: Request, res: Response): void => {
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-  });
+  res.clearCookie(COOKIE_NAME, getCookieOptions());
   res.status(200).json({ message: 'Logged out successfully' });
 });
 

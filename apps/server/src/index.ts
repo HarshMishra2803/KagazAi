@@ -29,10 +29,19 @@ const PORT = process.env.PORT || 5001;
 const HOCUSPOCUS_PORT = parseInt(process.env.HOCUSPOCUS_PORT || '1234', 10);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/kagazai';
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+const allowedOrigins = CLIENT_URL.split(',').map((u) => u.trim().replace(/\/+$/, ''));
 
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const cleanOrigin = origin.replace(/\/+$/, '');
+      if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes('*')) {
+        return callback(null, true);
+      }
+      // Support preview deployments and cloud subdomains
+      return callback(null, true);
+    },
     credentials: true,
   })
 );

@@ -315,7 +315,13 @@ export function CollaborativeEditor({
   useEffect(() => {
     if (!documentId || !wsToken) return;
 
-    const collabUrl = process.env.NEXT_PUBLIC_COLLAB_URL || 'ws://localhost:1234';
+    let collabUrl = process.env.NEXT_PUBLIC_COLLAB_URL || 'ws://localhost:1234';
+    if (collabUrl.startsWith('https://')) {
+      collabUrl = collabUrl.replace(/^https:\/\//, 'wss://');
+    } else if (collabUrl.startsWith('http://')) {
+      collabUrl = collabUrl.replace(/^http:\/\//, 'ws://');
+    }
+
     const p = new HocuspocusProvider({
       url: collabUrl,
       name: documentId,
