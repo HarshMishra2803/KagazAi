@@ -114,7 +114,7 @@ permissionsRouter.get('/', async (req: AuthenticatedRequest, res: Response): Pro
     res.status(200).json({
       collaborators,
       currentUserRole: role,
-      publicAccess: doc.publicAccess || 'view',
+      publicAccess: doc.publicAccess || 'edit',
     });
   } catch (err) {
     console.error('[permissions] Get error:', err);

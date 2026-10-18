@@ -52,6 +52,19 @@ function DocumentView({
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [pendingCommentId, setPendingCommentId] = useState<string | null>(null);
 
+  const handleSelectComment = useCallback((commentId: string | null) => {
+    setActiveCommentId(commentId);
+    if (commentId) {
+      setIsCommentsOpen(true);
+    }
+  }, []);
+
+  const handleAddCommentRequest = useCallback((commentId: string) => {
+    setPendingCommentId(commentId);
+    setActiveCommentId(commentId);
+    setIsCommentsOpen(true);
+  }, []);
+
   // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
@@ -277,17 +290,8 @@ function DocumentView({
           wsToken={wsToken}
           role={document.role || 'viewer'}
           activeCommentId={activeCommentId}
-          onSelectComment={(commentId) => {
-            setActiveCommentId(commentId);
-            if (commentId) {
-              setIsCommentsOpen(true);
-            }
-          }}
-          onAddCommentRequest={(commentId) => {
-            setPendingCommentId(commentId);
-            setActiveCommentId(commentId);
-            setIsCommentsOpen(true);
-          }}
+          onSelectComment={handleSelectComment}
+          onAddCommentRequest={handleAddCommentRequest}
         />
       </main>
 

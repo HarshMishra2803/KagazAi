@@ -28,7 +28,7 @@ const documentSchema = new Schema<IDocument>(
     publicAccess: {
       type: String,
       enum: ['private', 'view', 'edit'],
-      default: 'view', // 'private' = only explicit collaborators; 'view' = anyone with link can view; 'edit' = anyone with link can edit
+      default: 'edit', // 'private' = only explicit collaborators; 'view' = anyone with link can view; 'edit' = anyone with link can edit
     },
     content: {
       type: Buffer,

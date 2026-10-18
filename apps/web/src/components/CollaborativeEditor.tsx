@@ -120,6 +120,11 @@ export function CollaborativeEditor({
     }
   };
 
+  const onSelectCommentRef = React.useRef(onSelectComment);
+  useEffect(() => {
+    onSelectCommentRef.current = onSelectComment;
+  }, [onSelectComment]);
+
   const editor = useEditor(
     {
       extensions: [
@@ -156,8 +161,8 @@ export function CollaborativeEditor({
           const commentEl = target?.closest('.kagaz-comment-highlight');
           if (commentEl) {
             const commentId = commentEl.getAttribute('data-comment-id');
-            if (commentId && onSelectComment) {
-              onSelectComment(commentId);
+            if (commentId && onSelectCommentRef.current) {
+              onSelectCommentRef.current(commentId);
               return true;
             }
           }
@@ -165,7 +170,7 @@ export function CollaborativeEditor({
         },
       },
     },
-    [provider, currentUser, role, onSelectComment]
+    [provider]
   );
 
   // Synchronize TipTap editable status if role changes

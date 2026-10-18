@@ -43,7 +43,7 @@ export function ShareDialog({
   currentUserRole,
 }: ShareDialogProps) {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const [publicAccess, setPublicAccess] = useState<'private' | 'view' | 'edit'>('view');
+  const [publicAccess, setPublicAccess] = useState<'private' | 'view' | 'edit'>('edit');
   const [updatingAccess, setUpdatingAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');

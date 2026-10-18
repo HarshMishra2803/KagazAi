@@ -135,6 +135,16 @@ documentRouter.get('/:id', async (req: AuthenticatedRequest, res: Response): Pro
 
     if (document.ownerId.toString() === userId) {
       role = 'owner';
+    } else if (document.publicAccess === 'edit') {
+      role = 'editor';
+      // Auto-record / upgrade permission for link visitor so document appears on their dashboard as editor
+      try {
+        await PermissionModel.findOneAndUpdate(
+          { documentId: id, userId },
+          { role: 'editor' },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+      } catch (_) {}
     } else {
       const perm = await PermissionModel.findOne({
         documentId: id,
@@ -143,16 +153,6 @@ documentRouter.get('/:id', async (req: AuthenticatedRequest, res: Response): Pro
 
       if (perm) {
         role = perm.role;
-      } else if (document.publicAccess === 'edit') {
-        role = 'editor';
-        // Auto-record permission for link visitor so document appears on their dashboard
-        try {
-          await PermissionModel.findOneAndUpdate(
-            { documentId: id, userId },
-            { role: 'editor' },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
-          );
-        } catch (_) {}
       } else if (document.publicAccess === 'view' || !document.publicAccess) {
         role = 'viewer';
         // Auto-record permission for link visitor so document appears on their dashboard
@@ -214,6 +214,8 @@ documentRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response): P
 
     if (document.ownerId.toString() === userId) {
       role = 'owner';
+    } else if (document.publicAccess === 'edit') {
+      role = 'editor';
     } else {
       const perm = await PermissionModel.findOne({
         documentId: id,
@@ -222,8 +224,6 @@ documentRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response): P
 
       if (perm) {
         role = perm.role;
-      } else if (document.publicAccess === 'edit') {
-        role = 'editor';
       } else if (document.publicAccess === 'view' || !document.publicAccess) {
         role = 'viewer';
       }

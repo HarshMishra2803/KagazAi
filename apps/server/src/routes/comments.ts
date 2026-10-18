@@ -25,15 +25,27 @@ async function getUserRole(
   documentId: string,
   userId: string
 ): Promise<'owner' | 'editor' | 'viewer' | null> {
-  const doc = await DocumentModel.findById(documentId).select('ownerId');
+  const doc = await DocumentModel.findById(documentId).select('ownerId publicAccess');
   if (!doc) return null;
 
   if (doc.ownerId.toString() === userId) {
     return 'owner';
   }
 
+  if (doc.publicAccess === 'edit') {
+    return 'editor';
+  }
+
   const perm = await PermissionModel.findOne({ documentId, userId });
-  return perm ? perm.role : null;
+  if (perm) {
+    return perm.role;
+  }
+
+  if (doc.publicAccess === 'view' || !doc.publicAccess) {
+    return 'viewer';
+  }
+
+  return null;
 }
 
 const createCommentSchema = z.object({

@@ -111,6 +111,8 @@ export function createHocuspocusServer(port: number = 1234): Server {
 
         if (doc.ownerId.toString() === decoded.id) {
           role = 'owner';
+        } else if (doc.publicAccess === 'edit') {
+          role = 'editor';
         } else {
           const perm = await PermissionModel.findOne({
             documentId: doc._id,
@@ -118,8 +120,6 @@ export function createHocuspocusServer(port: number = 1234): Server {
           });
           if (perm) {
             role = perm.role;
-          } else if (doc.publicAccess === 'edit') {
-            role = 'editor';
           } else if (doc.publicAccess === 'view' || !doc.publicAccess) {
             role = 'viewer';
           }

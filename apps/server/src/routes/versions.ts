@@ -33,10 +33,11 @@ async function getUserRole(
     return 'owner';
   }
 
+  if (doc.publicAccess === 'edit') return 'editor';
+
   const perm = await PermissionModel.findOne({ documentId, userId });
   if (perm) return perm.role;
 
-  if (doc.publicAccess === 'edit') return 'editor';
   if (doc.publicAccess === 'view' || !doc.publicAccess) return 'viewer';
 
   return null;
