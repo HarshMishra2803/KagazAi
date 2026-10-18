@@ -182,14 +182,14 @@ function DocumentView({
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
+    <div className="min-h-screen flex flex-col bg-[#fafaf9] text-stone-900">
       {/* Top Header */}
-      <header className="border-b border-neutral-200 bg-white sticky top-0 z-10">
+      <header className="border-b border-stone-200 bg-[#fafaf9]/90 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/dashboard"
-              className="p-1.5 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900"
+              className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-stone-900"
               title="Back to Dashboard"
             >
               <ArrowLeft className="w-4 h-4" />

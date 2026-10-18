@@ -272,38 +272,38 @@ export default function DashboardPage() {
   const sharedCount = documents.filter((d) => d.role !== 'owner').length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-900 text-neutral-100 font-sans selection:bg-neutral-800">
+    <div className="min-h-screen flex flex-col bg-[#fafaf9] text-stone-900 font-sans selection:bg-stone-200 selection:text-stone-900">
       {/* Top Navigation */}
-      <header className="border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-md sticky top-0 z-30">
+      <header className="border-b border-stone-200 bg-[#fafaf9]/90 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link
               href="/"
-              className="flex items-center gap-2.5 focus:outline-hidden focus:ring-2 focus:ring-neutral-400 rounded-md py-1"
+              className="flex items-center gap-2.5 focus:outline-hidden focus:ring-2 focus:ring-stone-900 rounded-md py-1"
             >
-              <div className="w-8 h-8 rounded-md bg-white text-neutral-950 flex items-center justify-center font-bold text-sm shadow-xs">
+              <div className="w-8 h-8 rounded bg-stone-900 text-stone-50 flex items-center justify-center font-bold text-sm shadow-xs">
                 K
               </div>
-              <span className="text-base font-bold tracking-tight text-white">
+              <span className="text-base font-bold tracking-tight text-stone-900">
                 KagazAi
               </span>
             </Link>
 
-            <span className="text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 font-mono hidden sm:inline-block border border-neutral-700">
+            <span className="text-xs px-2 py-0.5 rounded bg-stone-100 text-stone-600 font-mono hidden sm:inline-block border border-stone-200">
               Workspace
             </span>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-xs text-neutral-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span className="hidden sm:inline font-medium text-neutral-300">{user?.name}</span>
+            <div className="flex items-center gap-2 text-xs text-stone-600">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span className="hidden sm:inline font-medium text-stone-800">{user?.name}</span>
             </div>
 
             <button
               type="button"
               onClick={() => logout()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-400 hover:text-white bg-neutral-800/80 hover:bg-neutral-800 border border-neutral-700 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-400"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-600 hover:text-stone-900 bg-white hover:bg-stone-100 border border-stone-300 rounded transition-colors focus:outline-hidden focus:ring-2 focus:ring-stone-900 shadow-xs"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sign out</span>
@@ -317,7 +317,7 @@ export default function DashboardPage() {
         {/* Quick Document Templates Banner */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-stone-500">
               Start a New Document
             </h2>
           </div>
@@ -327,14 +327,14 @@ export default function DashboardPage() {
               type="button"
               onClick={() => handleCreateDocument('Untitled Document')}
               disabled={creating}
-              className="p-4 bg-neutral-950 border border-neutral-800 hover:border-neutral-700 rounded-lg text-left transition-all hover:bg-neutral-800/50 group flex flex-col justify-between h-28"
+              className="p-4 bg-white border border-stone-200 hover:border-stone-400 rounded-md text-left transition-all hover:shadow-xs group flex flex-col justify-between h-28"
             >
-              <div className="w-8 h-8 rounded-md bg-neutral-800 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Plus className="w-4 h-4 text-emerald-400" />
+              <div className="w-8 h-8 rounded bg-stone-100 text-stone-900 flex items-center justify-center group-hover:bg-stone-200 transition-colors">
+                <Plus className="w-4 h-4 text-emerald-600" />
               </div>
               <div>
-                <div className="text-xs font-semibold text-white">Blank Document</div>
-                <div className="text-[11px] text-neutral-500">Create fresh note</div>
+                <div className="text-xs font-semibold text-stone-900">Blank Document</div>
+                <div className="text-[11px] text-stone-500">Create fresh note</div>
               </div>
             </button>
 
@@ -342,14 +342,14 @@ export default function DashboardPage() {
               type="button"
               onClick={() => handleCreateDocument('Meeting Notes & Action Items')}
               disabled={creating}
-              className="p-4 bg-neutral-950 border border-neutral-800 hover:border-neutral-700 rounded-lg text-left transition-all hover:bg-neutral-800/50 group flex flex-col justify-between h-28"
+              className="p-4 bg-white border border-stone-200 hover:border-stone-400 rounded-md text-left transition-all hover:shadow-xs group flex flex-col justify-between h-28"
             >
-              <div className="w-8 h-8 rounded-md bg-neutral-800 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Calendar className="w-4 h-4 text-blue-400" />
+              <div className="w-8 h-8 rounded bg-stone-100 text-stone-900 flex items-center justify-center group-hover:bg-stone-200 transition-colors">
+                <Calendar className="w-4 h-4 text-blue-600" />
               </div>
               <div>
-                <div className="text-xs font-semibold text-white">Meeting Notes</div>
-                <div className="text-[11px] text-neutral-500">Agenda &amp; decisions</div>
+                <div className="text-xs font-semibold text-stone-900">Meeting Notes</div>
+                <div className="text-[11px] text-stone-500">Agenda &amp; decisions</div>
               </div>
             </button>
 
@@ -357,14 +357,14 @@ export default function DashboardPage() {
               type="button"
               onClick={() => handleCreateDocument('Project Architecture & RFC')}
               disabled={creating}
-              className="p-4 bg-neutral-950 border border-neutral-800 hover:border-neutral-700 rounded-lg text-left transition-all hover:bg-neutral-800/50 group flex flex-col justify-between h-28"
+              className="p-4 bg-white border border-stone-200 hover:border-stone-400 rounded-md text-left transition-all hover:shadow-xs group flex flex-col justify-between h-28"
             >
-              <div className="w-8 h-8 rounded-md bg-neutral-800 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
-                <BookOpen className="w-4 h-4 text-amber-400" />
+              <div className="w-8 h-8 rounded bg-stone-100 text-stone-900 flex items-center justify-center group-hover:bg-stone-200 transition-colors">
+                <BookOpen className="w-4 h-4 text-amber-600" />
               </div>
               <div>
-                <div className="text-xs font-semibold text-white">Architecture RFC</div>
-                <div className="text-[11px] text-neutral-500">System design spec</div>
+                <div className="text-xs font-semibold text-stone-900">Architecture RFC</div>
+                <div className="text-[11px] text-stone-500">System design spec</div>
               </div>
             </button>
 
@@ -372,14 +372,14 @@ export default function DashboardPage() {
               type="button"
               onClick={() => handleCreateDocument('Course Assignment Draft')}
               disabled={creating}
-              className="p-4 bg-neutral-950 border border-neutral-800 hover:border-neutral-700 rounded-lg text-left transition-all hover:bg-neutral-800/50 group flex flex-col justify-between h-28"
+              className="p-4 bg-white border border-stone-200 hover:border-stone-400 rounded-md text-left transition-all hover:shadow-xs group flex flex-col justify-between h-28"
             >
-              <div className="w-8 h-8 rounded-md bg-neutral-800 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
-                <FilePlus className="w-4 h-4 text-emerald-400" />
+              <div className="w-8 h-8 rounded bg-stone-100 text-stone-900 flex items-center justify-center group-hover:bg-stone-200 transition-colors">
+                <FilePlus className="w-4 h-4 text-emerald-600" />
               </div>
               <div>
-                <div className="text-xs font-semibold text-white">Assignment Report</div>
-                <div className="text-[11px] text-neutral-500">Student collab draft</div>
+                <div className="text-xs font-semibold text-stone-900">Assignment Report</div>
+                <div className="text-[11px] text-stone-500">Student collab draft</div>
               </div>
             </button>
           </div>
@@ -389,14 +389,14 @@ export default function DashboardPage() {
         <section className="space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-neutral-950 border border-neutral-800 rounded-lg text-xs">
+            <div className="flex items-center gap-1.5 p-1 bg-stone-100 border border-stone-200 rounded-md text-xs">
               <button
                 type="button"
                 onClick={() => setActiveFilter('all')}
-                className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded font-medium transition-colors ${
                   activeFilter === 'all'
-                    ? 'bg-neutral-800 text-white shadow-2xs'
-                    : 'text-neutral-400 hover:text-neutral-200'
+                    ? 'bg-white text-stone-900 shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
                 All Documents ({documents.length})
@@ -404,10 +404,10 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setActiveFilter('owned')}
-                className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded font-medium transition-colors ${
                   activeFilter === 'owned'
-                    ? 'bg-neutral-800 text-white shadow-2xs'
-                    : 'text-neutral-400 hover:text-neutral-200'
+                    ? 'bg-white text-stone-900 shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
                 Created by me ({ownedCount})
@@ -415,10 +415,10 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setActiveFilter('shared')}
-                className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded font-medium transition-colors ${
                   activeFilter === 'shared'
-                    ? 'bg-neutral-800 text-white shadow-2xs'
-                    : 'text-neutral-400 hover:text-neutral-200'
+                    ? 'bg-white text-stone-900 shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
                 Shared with me ({sharedCount})
@@ -428,23 +428,23 @@ export default function DashboardPage() {
             {/* Search Input & Controls */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1 sm:w-64">
-                <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search documents..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-neutral-950 border border-neutral-800 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-hidden focus:ring-2 focus:ring-neutral-400"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-stone-300 rounded text-stone-900 placeholder-stone-400 focus:outline-hidden focus:ring-2 focus:ring-stone-900 shadow-xs"
                 />
               </div>
 
               {/* View Toggle */}
-              <div className="flex items-center p-1 bg-neutral-950 border border-neutral-800 rounded-lg">
+              <div className="flex items-center p-1 bg-stone-100 border border-stone-200 rounded-md">
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
                   className={`p-1.5 rounded transition-colors ${
-                    viewMode === 'grid' ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300'
+                    viewMode === 'grid' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-500 hover:text-stone-800'
                   }`}
                   title="Grid View"
                 >
@@ -454,7 +454,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={() => setViewMode('list')}
                   className={`p-1.5 rounded transition-colors ${
-                    viewMode === 'list' ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300'
+                    viewMode === 'list' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-500 hover:text-stone-800'
                   }`}
                   title="List View"
                 >
@@ -465,7 +465,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={fetchDocuments}
-                className="p-2 bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-white rounded-lg transition-colors"
+                className="p-2 bg-white border border-stone-300 text-stone-600 hover:text-stone-900 rounded transition-colors shadow-xs"
                 title="Refresh documents"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -475,15 +475,15 @@ export default function DashboardPage() {
 
           {/* Feedback Alerts */}
           {error && (
-            <div className="p-3 bg-red-950/60 border border-red-800 rounded-lg flex items-center justify-between text-xs text-red-300">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md flex items-center justify-between text-xs text-red-700">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
                 <span>{error}</span>
               </div>
               <button
                 type="button"
                 onClick={fetchDocuments}
-                className="text-red-300 hover:underline shrink-0 font-medium"
+                className="text-red-700 hover:underline shrink-0 font-medium"
               >
                 Retry
               </button>
@@ -492,19 +492,19 @@ export default function DashboardPage() {
 
           {/* Documents Content */}
           {loading ? (
-            <div className="py-20 text-center text-xs text-neutral-500 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+            <div className="py-20 text-center text-xs text-stone-500 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-6 h-6 animate-spin text-stone-600" />
               <span>Loading workspace documents...</span>
             </div>
           ) : filteredDocs.length === 0 ? (
-            <div className="py-20 bg-neutral-950 border border-neutral-800/80 rounded-xl text-center p-8 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-500 mx-auto">
+            <div className="py-20 bg-white border border-stone-200 rounded-md text-center p-8 space-y-3 shadow-xs">
+              <div className="w-12 h-12 rounded-md bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-500 mx-auto">
                 <FileText className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-semibold text-white">
+              <h3 className="text-sm font-semibold text-stone-900">
                 {searchQuery ? 'No documents match your search' : 'No documents found'}
               </h3>
-              <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+              <p className="text-xs text-stone-500 max-w-sm mx-auto">
                 {searchQuery
                   ? 'Try searching with different keywords.'
                   : 'Get started by creating your first document above.'}
@@ -512,7 +512,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => handleCreateDocument()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-neutral-950 text-xs font-semibold rounded-md hover:bg-neutral-200 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-stone-900 text-stone-50 text-xs font-semibold rounded hover:bg-stone-800 transition-colors shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Create New Document</span>
@@ -529,18 +529,18 @@ export default function DashboardPage() {
                   <div
                     key={doc._id}
                     onClick={() => !isEditing && router.push(`/doc/${doc._id}`)}
-                    className="p-5 bg-neutral-950 border border-neutral-800 hover:border-neutral-700 rounded-xl transition-all hover:bg-neutral-900/50 cursor-pointer flex flex-col justify-between group shadow-sm"
+                    className="p-5 bg-white border border-stone-200 hover:border-stone-400 rounded-md transition-all hover:shadow-xs cursor-pointer flex flex-col justify-between group shadow-2xs"
                   >
                     <div>
                       {/* Card Header: Role Badge & Actions */}
-                      <div className="flex items-center justify-between pb-3 border-b border-neutral-800/60 mb-3">
+                      <div className="flex items-center justify-between pb-3 border-b border-stone-100 mb-3">
                         <span
                           className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${
                             doc.role === 'owner'
-                              ? 'bg-emerald-950/80 text-emerald-400 border-emerald-900/80'
+                              ? 'bg-stone-100 text-stone-800 border-stone-200'
                               : doc.role === 'editor'
-                              ? 'bg-blue-950/80 text-blue-400 border-blue-900/80'
-                              : 'bg-neutral-800 text-neutral-400 border-neutral-700'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
                           }`}
                         >
                           <Shield className="w-2.5 h-2.5" />
@@ -552,11 +552,11 @@ export default function DashboardPage() {
                           <button
                             type="button"
                             onClick={(e) => handleCopyLink(e, doc._id)}
-                            className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-neutral-800 transition-colors"
+                            className="p-1.5 text-stone-500 hover:text-stone-900 rounded hover:bg-stone-100 transition-colors"
                             title="Copy link"
                           >
                             {copiedId === doc._id ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
@@ -569,7 +569,7 @@ export default function DashboardPage() {
                               e.stopPropagation();
                               setShareDocId(doc._id);
                             }}
-                            className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-neutral-800 transition-colors"
+                            className="p-1.5 text-stone-500 hover:text-stone-900 rounded hover:bg-stone-100 transition-colors"
                             title="Share"
                           >
                             <Share2 className="w-3.5 h-3.5" />
@@ -580,7 +580,7 @@ export default function DashboardPage() {
                             <button
                               type="button"
                               onClick={(e) => handleStartRename(e, doc)}
-                              className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-neutral-800 transition-colors"
+                              className="p-1.5 text-stone-500 hover:text-stone-900 rounded hover:bg-stone-100 transition-colors"
                               title="Rename"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -593,11 +593,11 @@ export default function DashboardPage() {
                               type="button"
                               disabled={isDeleting}
                               onClick={(e) => handleDelete(e, doc._id, doc.title)}
-                              className="p-1.5 text-neutral-500 hover:text-red-400 rounded hover:bg-red-950/50 transition-colors disabled:opacity-50"
+                              className="p-1.5 text-stone-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
                               title="Delete"
                             >
                               {isDeleting ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-600" />
                               ) : (
                                 <Trash2 className="w-3.5 h-3.5" />
                               )}
@@ -621,37 +621,37 @@ export default function DashboardPage() {
                               if (e.key === 'Enter') handleSaveRename(e as any, doc._id);
                               if (e.key === 'Escape') handleCancelRename(e as any);
                             }}
-                            className="flex-1 px-2.5 py-1 text-xs bg-neutral-900 border border-neutral-700 rounded text-white focus:outline-hidden focus:ring-2 focus:ring-white"
+                            className="flex-1 px-2.5 py-1 text-xs bg-white border border-stone-300 rounded text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-stone-900 shadow-xs"
                           />
                           <button
                             type="button"
                             disabled={renaming}
                             onClick={(e) => handleSaveRename(e, doc._id)}
-                            className="p-1 text-emerald-400 hover:bg-neutral-800 rounded"
+                            className="p-1 text-emerald-600 hover:bg-stone-100 rounded"
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={handleCancelRename}
-                            className="p-1 text-neutral-500 hover:bg-neutral-800 rounded"
+                            className="p-1 text-stone-500 hover:bg-stone-100 rounded"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ) : (
-                        <h3 className="text-sm font-semibold text-white group-hover:text-neutral-200 transition-colors truncate">
+                        <h3 className="text-sm font-semibold text-stone-900 group-hover:text-stone-700 transition-colors truncate">
                           {doc.title}
                         </h3>
                       )}
                     </div>
 
-                    <div className="mt-6 flex items-center justify-between text-[11px] text-neutral-500 pt-3 border-t border-neutral-800/40">
+                    <div className="mt-6 flex items-center justify-between text-[11px] text-stone-500 pt-3 border-t border-stone-100">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-neutral-500" />
+                        <Clock className="w-3 h-3 text-stone-400" />
                         <span>Edited {formatDate(doc.updatedAt)}</span>
                       </span>
-                      <span className="text-neutral-400 font-mono text-[10px]">CRDT Active</span>
+                      <span className="text-stone-500 font-mono text-[10px]">CRDT Active</span>
                     </div>
                   </div>
                 );
@@ -659,7 +659,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             /* LIST VIEW */
-            <div className="bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden divide-y divide-neutral-850">
+            <div className="bg-white border border-stone-200 rounded-md overflow-hidden divide-y divide-stone-100 shadow-xs">
               {filteredDocs.map((doc) => {
                 const isEditing = editingId === doc._id;
                 const isDeleting = deletingId === doc._id;
@@ -668,10 +668,10 @@ export default function DashboardPage() {
                   <div
                     key={doc._id}
                     onClick={() => !isEditing && router.push(`/doc/${doc._id}`)}
-                    className="p-4 hover:bg-neutral-900/60 transition-colors flex items-center justify-between gap-4 cursor-pointer"
+                    className="p-4 hover:bg-stone-50/80 transition-colors flex items-center justify-between gap-4 cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-8 h-8 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 shrink-0">
+                      <div className="w-8 h-8 rounded bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-600 shrink-0">
                         <FileText className="w-4 h-4" />
                       </div>
 
@@ -689,28 +689,28 @@ export default function DashboardPage() {
                               if (e.key === 'Enter') handleSaveRename(e as any, doc._id);
                               if (e.key === 'Escape') handleCancelRename(e as any);
                             }}
-                            className="flex-1 px-2.5 py-1 text-xs bg-neutral-900 border border-neutral-700 rounded text-white focus:outline-hidden focus:ring-2 focus:ring-white"
+                            className="flex-1 px-2.5 py-1 text-xs bg-white border border-stone-300 rounded text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-stone-900 shadow-xs"
                           />
                           <button
                             type="button"
                             onClick={(e) => handleSaveRename(e, doc._id)}
-                            className="p-1 text-emerald-400 hover:bg-neutral-800 rounded"
+                            className="p-1 text-emerald-600 hover:bg-stone-100 rounded"
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={handleCancelRename}
-                            className="p-1 text-neutral-500 hover:bg-neutral-800 rounded"
+                            className="p-1 text-stone-500 hover:bg-stone-100 rounded"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ) : (
                         <div className="min-w-0">
-                          <h3 className="text-xs font-semibold text-white truncate">{doc.title}</h3>
-                          <span className="text-[11px] text-neutral-500 flex items-center gap-1 mt-0.5">
-                            <Clock className="w-3 h-3" />
+                          <h3 className="text-xs font-semibold text-stone-900 truncate">{doc.title}</h3>
+                          <span className="text-[11px] text-stone-500 flex items-center gap-1 mt-0.5">
+                            <Clock className="w-3 h-3 text-stone-400" />
                             <span>Updated {formatDate(doc.updatedAt)}</span>
                           </span>
                         </div>
@@ -721,10 +721,10 @@ export default function DashboardPage() {
                       <span
                         className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded border ${
                           doc.role === 'owner'
-                            ? 'bg-emerald-950/80 text-emerald-400 border-emerald-900'
+                            ? 'bg-stone-100 text-stone-800 border-stone-200'
                             : doc.role === 'editor'
-                            ? 'bg-blue-950/80 text-blue-400 border-blue-900'
-                            : 'bg-neutral-800 text-neutral-400 border-neutral-700'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
                         }`}
                       >
                         {doc.role || 'viewer'}
@@ -734,11 +734,11 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={(e) => handleCopyLink(e, doc._id)}
-                          className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-neutral-800"
+                          className="p-1.5 text-stone-500 hover:text-stone-900 rounded hover:bg-stone-100"
                           title="Copy link"
                         >
                           {copiedId === doc._id ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
                           ) : (
                             <Copy className="w-3.5 h-3.5" />
                           )}
@@ -750,7 +750,7 @@ export default function DashboardPage() {
                             e.stopPropagation();
                             setShareDocId(doc._id);
                           }}
-                          className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-neutral-800"
+                          className="p-1.5 text-stone-500 hover:text-stone-900 rounded hover:bg-stone-100"
                           title="Share"
                         >
                           <Share2 className="w-3.5 h-3.5" />
@@ -760,7 +760,7 @@ export default function DashboardPage() {
                           <button
                             type="button"
                             onClick={(e) => handleStartRename(e, doc)}
-                            className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-neutral-800"
+                            className="p-1.5 text-stone-500 hover:text-stone-900 rounded hover:bg-stone-100"
                             title="Rename"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -772,7 +772,7 @@ export default function DashboardPage() {
                             type="button"
                             disabled={isDeleting}
                             onClick={(e) => handleDelete(e, doc._id, doc.title)}
-                            className="p-1.5 text-neutral-500 hover:text-red-400 rounded hover:bg-red-950/50 disabled:opacity-50"
+                            className="p-1.5 text-stone-400 hover:text-red-600 rounded hover:bg-red-50 disabled:opacity-50"
                             title="Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -801,14 +801,14 @@ export default function DashboardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-neutral-800 bg-neutral-950 py-6 text-xs text-neutral-500">
+      <footer className="border-t border-stone-200 bg-[#fafaf9] py-6 text-xs text-stone-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           <span>KagazAi Workspace</span>
           <div className="flex gap-4">
-            <Link href="/privacy" className="hover:text-neutral-300 transition-colors">
+            <Link href="/privacy" className="hover:text-stone-900 transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="hover:text-neutral-300 transition-colors">
+            <Link href="/terms" className="hover:text-stone-900 transition-colors">
               Terms of Service
             </Link>
           </div>
