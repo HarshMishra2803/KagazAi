@@ -5,7 +5,8 @@ import { VersionModel } from '../models/Version';
 import { DocumentModel } from '../models/Document';
 import { PermissionModel } from '../models/Permission';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
-import { restoreVersionToLiveDocument } from '../hocuspocus';
+import { restoreVersionToLiveDocument, getHocuspocusServer } from '../hocuspocus';
+import * as Y from 'yjs';
 
 export const versionsRouter = Router({ mergeParams: true });
 
@@ -114,7 +115,23 @@ versionsRouter.post('/', async (req: AuthenticatedRequest, res: Response): Promi
       return;
     }
 
-    const state = doc.content && doc.content.length > 0 ? doc.content : Buffer.from(new Uint8Array());
+    let state = doc.content && doc.content.length > 0 ? doc.content : null;
+
+    // Check if document has live active changes in Hocuspocus memory
+    const liveServer = getHocuspocusServer();
+    const hocuspocusCore = (liveServer as any)?.hocuspocus || liveServer;
+    if (hocuspocusCore?.documents?.has(documentId)) {
+      const liveDoc = hocuspocusCore.documents.get(documentId);
+      if (liveDoc) {
+        state = Buffer.from(Y.encodeStateAsUpdate(liveDoc));
+      }
+    }
+
+    // Fallback to valid 2-byte empty Y.Doc update if empty
+    if (!state || state.length === 0) {
+      state = Buffer.from([0, 0]);
+    }
+
     const plainText = doc.plainText || '';
 
     const newVersion = await VersionModel.create({
@@ -137,9 +154,10 @@ versionsRouter.post('/', async (req: AuthenticatedRequest, res: Response): Promi
         createdBy: populated.createdBy,
       },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[versions] Create error:', err);
-    res.status(500).json({ error: 'Failed to save version' });
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: 'Failed to save version', details: msg });
   }
 });
 

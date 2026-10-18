@@ -292,6 +292,29 @@ export function CollaborativeEditor({
       <div className="editor-paper">
         <EditorContent editor={editor} />
       </div>
+
+      {/* Editor Document Footer Metrics */}
+      <div className="flex items-center justify-between px-3.5 py-2 text-[11px] text-neutral-500 bg-white border border-neutral-200 rounded-md shadow-xs">
+        <div className="flex items-center gap-3">
+          <span>{editor?.getText().trim() ? editor.getText().trim().split(/\s+/).length : 0} words</span>
+          <span className="text-neutral-300">&middot;</span>
+          <span>{editor?.getText().length || 0} characters</span>
+          <span className="text-neutral-300">&middot;</span>
+          <span>{Math.max(1, Math.ceil((editor?.getText().trim() ? editor.getText().trim().split(/\s+/).length : 0) / 200))} min read</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {role === 'viewer' ? (
+            <span className="text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+              Read-Only Viewer
+            </span>
+          ) : (
+            <span className="text-neutral-600 font-medium">
+              Editing enabled
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

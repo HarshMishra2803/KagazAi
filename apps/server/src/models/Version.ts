@@ -33,6 +33,7 @@ const VersionSchema = new Schema<IVersion>(
     state: {
       type: Buffer,
       required: true,
+      default: () => Buffer.from([0, 0]),
     },
     plainText: {
       type: String,
