@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { CollaborativeEditor } from '@/components/CollaborativeEditor';
+import { ShareDialog } from '@/components/ShareDialog';
 import {
   ArrowLeft,
   AlertCircle,
@@ -13,6 +14,8 @@ import {
   Clock,
   LogOut,
   Users,
+  Share2,
+  Eye,
 } from 'lucide-react';
 
 interface DocumentData {
@@ -21,6 +24,7 @@ interface DocumentData {
   ownerId: string;
   createdAt: string;
   updatedAt: string;
+  role?: 'owner' | 'editor' | 'viewer';
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -38,6 +42,7 @@ function DocumentView({
   const [wsToken, setWsToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -175,9 +180,20 @@ function DocumentView({
                 <h1 className="text-sm font-semibold text-neutral-900 truncate">
                   {document.title}
                 </h1>
-                <span className="text-[10px] uppercase font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded shrink-0">
-                  Prompt 4
-                </span>
+                {document.role === 'viewer' ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shrink-0">
+                    <Eye className="w-3 h-3 text-amber-600" />
+                    Viewing only
+                  </span>
+                ) : document.role === 'editor' ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded shrink-0">
+                    Editor
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-700 bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded shrink-0">
+                    Owner
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1 text-[11px] text-neutral-500">
                 <Clock className="w-3 h-3 text-neutral-400" />
@@ -187,6 +203,27 @@ function DocumentView({
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            {/* Share / Collaborators Button */}
+            {document.role === 'owner' ? (
+              <button
+                type="button"
+                onClick={() => setIsShareOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share</span>
+              </button>
+            ) : document.role === 'editor' ? (
+              <button
+                type="button"
+                onClick={() => setIsShareOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-700 bg-white border border-neutral-300 hover:bg-neutral-50 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Collaborators</span>
+              </button>
+            ) : null}
+
             <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-neutral-600 font-medium bg-neutral-100 px-2 py-1 rounded">
               <Users className="w-3.5 h-3.5 text-neutral-500" />
               CRDT Sync (Yjs)
@@ -215,8 +252,17 @@ function DocumentView({
         <CollaborativeEditor
           documentId={document._id}
           wsToken={wsToken}
+          role={document.role || 'viewer'}
         />
       </main>
+
+      {/* Share Dialog */}
+      <ShareDialog
+        documentId={document._id}
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        currentUserRole={document.role || 'viewer'}
+      />
     </div>
   );
 }

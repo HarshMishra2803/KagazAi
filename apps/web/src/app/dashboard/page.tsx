@@ -24,6 +24,7 @@ export interface DocumentItem {
   ownerId: string;
   createdAt: string;
   updatedAt: string;
+  role?: 'owner' | 'editor' | 'viewer';
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -427,12 +428,27 @@ export default function DashboardPage() {
                         </div>
                       ) : (
                         <div className="min-w-0 flex-1">
-                          <Link
-                            href={`/doc/${doc._id}`}
-                            className="text-sm font-medium text-neutral-900 hover:text-neutral-700 hover:underline block truncate focus:outline-hidden focus:ring-2 focus:ring-neutral-900 rounded"
-                          >
-                            {doc.title}
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/doc/${doc._id}`}
+                              className="text-sm font-medium text-neutral-900 hover:text-neutral-700 hover:underline truncate focus:outline-hidden focus:ring-2 focus:ring-neutral-900 rounded"
+                            >
+                              {doc.title}
+                            </Link>
+                            {doc.role === 'owner' ? (
+                              <span className="text-[10px] font-semibold text-neutral-600 bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 rounded shrink-0">
+                                Owner
+                              </span>
+                            ) : doc.role === 'editor' ? (
+                              <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded shrink-0">
+                                Editor
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0">
+                                Viewer
+                              </span>
+                            )}
+                          </div>
                           <div className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-500">
                             <Clock className="w-3 h-3 text-neutral-400" />
                             <span>Updated {formatDate(doc.updatedAt)}</span>
@@ -443,27 +459,36 @@ export default function DashboardPage() {
 
                     {!isEditing && (
                       <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
-                        <button
-                          onClick={() => startRenaming(doc)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900"
-                          title="Rename document"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                          <span>Rename</span>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(doc._id)}
-                          disabled={isDeleting}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-red-600 disabled:opacity-50"
-                          title="Delete document"
-                        >
-                          {isDeleting ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3 h-3" />
-                          )}
-                          <span>Delete</span>
-                        </button>
+                        {(doc.role === 'owner' || doc.role === 'editor') && (
+                          <button
+                            onClick={() => startRenaming(doc)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900"
+                            title="Rename document"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            <span>Rename</span>
+                          </button>
+                        )}
+                        {doc.role === 'owner' && (
+                          <button
+                            onClick={() => handleDelete(doc._id)}
+                            disabled={isDeleting}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-red-600 disabled:opacity-50"
+                            title="Delete document"
+                          >
+                            {isDeleting ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                            <span>Delete</span>
+                          </button>
+                        )}
+                        {doc.role === 'viewer' && (
+                          <span className="text-xs text-neutral-400 px-2 py-1 select-none">
+                            View only
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

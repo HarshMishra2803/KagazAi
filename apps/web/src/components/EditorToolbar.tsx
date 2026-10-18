@@ -15,15 +15,26 @@ import {
   Link2,
   Undo2,
   Redo2,
+  Eye,
 } from 'lucide-react';
 
 interface EditorToolbarProps {
   editor: Editor | null;
+  readOnly?: boolean;
 }
 
-export function EditorToolbar({ editor }: EditorToolbarProps) {
+export function EditorToolbar({ editor, readOnly = false }: EditorToolbarProps) {
   if (!editor) {
     return null;
+  }
+
+  if (readOnly || !editor.isEditable) {
+    return (
+      <div className="flex items-center gap-2 p-2 px-3 bg-neutral-100 border border-neutral-200 rounded-md text-xs text-neutral-600 mb-4">
+        <Eye className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+        <span>You have view-only access to this document. Editing and formatting are disabled.</span>
+      </div>
+    );
   }
 
   const setLink = () => {

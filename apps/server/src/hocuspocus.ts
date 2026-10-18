@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import * as Y from 'yjs';
 import mongoose from 'mongoose';
 import { DocumentModel } from './models/Document';
+import { PermissionModel } from './models/Permission';
 
 export interface HocuspocusUserContext {
   user: {
@@ -71,11 +72,41 @@ export function createHocuspocusServer(port: number = 1234): Server {
       try {
         const decoded = jwt.verify(candidateToken, secret) as HocuspocusUserContext['user'];
 
-        // TODO (Prompt 7): Query Permission model to verify document access (owner, editor, viewer).
-        // If role === 'viewer', set connectionConfig.readOnly = true.
-        // If user has no access, reject connection.
+        if (!mongoose.isValidObjectId(documentName)) {
+          throw new Error('Invalid document ID');
+        }
 
-        console.log(`[hocuspocus] Authenticated ${decoded.name} (${decoded.email}) for document: ${documentName}`);
+        // Query Document and Permissions to enforce access control
+        const doc = await DocumentModel.findById(documentName);
+        if (!doc) {
+          throw new Error('Document not found');
+        }
+
+        let role: 'owner' | 'editor' | 'viewer' | null = null;
+
+        if (doc.ownerId.toString() === decoded.id) {
+          role = 'owner';
+        } else {
+          const perm = await PermissionModel.findOne({
+            documentId: doc._id,
+            userId: decoded.id,
+          });
+          if (perm) {
+            role = perm.role;
+          }
+        }
+
+        if (!role) {
+          console.warn(`[hocuspocus] User ${decoded.name} (${decoded.id}) has no permission for doc ${documentName}`);
+          throw new Error('Access denied: You do not have permission to view or edit this document');
+        }
+
+        if (role === 'viewer') {
+          data.connectionConfig.readOnly = true;
+          console.log(`[hocuspocus] Read-only viewer mode enforced for ${decoded.name} in document ${documentName}`);
+        }
+
+        console.log(`[hocuspocus] Authenticated ${decoded.name} (${role}) for document: ${documentName}`);
 
         return {
           user: {

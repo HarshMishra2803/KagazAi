@@ -15,6 +15,7 @@ import { Wifi, WifiOff, Loader2, Users } from 'lucide-react';
 interface CollaborativeEditorProps {
   documentId: string;
   wsToken: string;
+  role?: 'owner' | 'editor' | 'viewer';
 }
 
 interface Collaborator {
@@ -27,6 +28,7 @@ interface Collaborator {
 export function CollaborativeEditor({
   documentId,
   wsToken,
+  role = 'owner',
 }: CollaborativeEditorProps) {
   const { user } = useAuth();
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
@@ -134,6 +136,7 @@ export function CollaborativeEditor({
           },
         }),
       ],
+      editable: role !== 'viewer',
       immediatelyRender: false,
       editorProps: {
         attributes: {
@@ -142,8 +145,15 @@ export function CollaborativeEditor({
         },
       },
     },
-    [provider, currentUser]
+    [provider, currentUser, role]
   );
+
+  // Synchronize TipTap editable status if role changes
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(role !== 'viewer');
+    }
+  }, [editor, role]);
 
   return (
     <div className="w-full space-y-3">
@@ -219,7 +229,7 @@ export function CollaborativeEditor({
       </div>
 
       {/* Editor Toolbar */}
-      <EditorToolbar editor={editor} />
+      <EditorToolbar editor={editor} readOnly={role === 'viewer'} />
 
       {/* Editor Content Area */}
       <div className="editor-paper">
