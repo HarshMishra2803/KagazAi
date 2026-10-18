@@ -1,186 +1,259 @@
 # KagazAi
 
-KagazAi is a real-time collaborative document editor for students and small teams who write notes, assignments, and reports together. It synchronizes text edits using conflict-free replicated data types (CRDTs) over WebSockets, renders live presence with deterministic user cursors, provides granular role-based sharing permissions, captures automated version history snapshots, and scales horizontally across multiple backend instances via Redis pub/sub.
+[![CI](https://github.com/HarshMishra2803/KagazAi/actions/workflows/ci.yml/badge.svg)](https://github.com/HarshMishra2803/KagazAi/actions/workflows/ci.yml)
+
+A real-time collaborative document editor for students and small teams. Several people edit the same document at once, offline edits merge when they reconnect, and every permission is enforced on the server.
+
+**Live demo:** [kagazai.onrender.com](https://kagazai.onrender.com/)
+The demo runs on Render, so the first request after a quiet period can take a while to wake the instance.
+
+KagazAi is a learning and portfolio project. It is not a replacement for Google Docs. I built it to understand what happens underneath a collaborative editor: concurrent edits, offline merge, server-side access control, and scaling WebSockets across more than one server.
 
 ---
 
-## Architecture Overview
+## Try it in two minutes
+
+1. Open the [live demo](https://kagazai.onrender.com/) and create an account.
+2. Create a document and type something.
+3. In a private window, create a second account. From the first account, share the document with the second account's email as **Editor**.
+4. Type in both windows. Each window shows the other person's cursor, selection, and name.
+5. Change the second account to **Viewer**. That account can no longer edit, even if it tampers with the page in browser dev tools.
+6. Save a named version, edit the document, then restore the version. Both windows update without a reload.
+7. Select some text and add a comment. Reply to it and resolve the thread.
+
+---
+
+## Features
+
+**Editing**
+- Rich text: headings (H1 to H3), bold, italic, bullet and numbered lists, code blocks, and links.
+- Toolbar that follows the current selection.
+
+**Collaboration**
+- Real-time sync with Yjs CRDTs. Concurrent edits merge without a lock, and edits made offline merge on reconnect.
+- Live cursors, text selections, and an avatar bar of who is in the document. Colors come from a hash of the user id, so a person keeps the same color everywhere.
+- Inline comment threads with replies and resolve. Comments stay attached to the right words while other people edit.
+
+**Sharing and security**
+- Roles per document: Owner, Editor, Viewer. Owners can also enable link-based general access.
+- Roles are enforced on the REST API and on the WebSocket connection. A viewer's update packets are dropped by the server.
+- Passwords are hashed with bcrypt. Sessions use an `httpOnly` cookie.
+
+**History**
+- Automatic version snapshot at most every 10 minutes during editing, plus manual named versions.
+- Read-only preview of any version.
+- Restore applies the old content as a new edit on the live document, so connected users see it update in place. A safety snapshot is taken before every restore.
+
+**Platform**
+- Document dashboard with role badges.
+- Multi-node scaling through Redis pub/sub, with an Nginx and Docker Compose setup for running two server nodes locally.
+- Privacy policy and terms pages, favicon and web manifest.
+
+---
+
+## How it works
 
 ```mermaid
 graph TD
     subgraph Clients
-        BrowserA["Client A (Next.js 16)"]
-        BrowserB["Client B (Next.js 16)"]
-        BrowserC["Client C (Viewer)"]
+        A["Browser A (Next.js, TipTap, Yjs)"]
+        B["Browser B (Next.js, TipTap, Yjs)"]
     end
 
-    subgraph Edge["Reverse Proxy & Edge"]
-        Nginx["Nginx Reverse Proxy (:80 / :443)"]
+    subgraph Edge
+        N["Nginx"]
     end
 
-    subgraph BackendCluster["Horizontal Backend Cluster"]
-        Node1["Server Node 1 (Express :5001 + Hocuspocus :1234)"]
-        Node2["Server Node 2 (Express :5002 + Hocuspocus :1235)"]
+    subgraph Servers["Server nodes (Express REST + Hocuspocus WebSocket)"]
+        S1["Node 1"]
+        S2["Node 2"]
     end
 
-    subgraph DistributedState["Persistence & Pub/Sub"]
-        Redis[("Redis Pub/Sub (:6379)")]
-        Mongo[("MongoDB Atlas (:27017)")]
-    end
+    R[("Redis pub/sub")]
+    M[("MongoDB")]
 
-    BrowserA <-->|"WSS /collab (ip_hash)"| Nginx
-    BrowserB <-->|"WSS /collab (ip_hash)"| Nginx
-    BrowserC <-->|"HTTPS /api (least_conn)"| Nginx
+    A -->|"REST /api (least_conn)"| N
+    B -->|"REST /api (least_conn)"| N
+    A <-->|"WebSocket /collab (ip_hash)"| N
+    B <-->|"WebSocket /collab (ip_hash)"| N
 
-    Nginx <-->|"REST API"| Node1
-    Nginx <-->|"Yjs WebSockets"| Node2
+    N --> S1
+    N --> S2
 
-    Node1 <-->|"Pub/Sub Channel per Doc"| Redis
-    Node2 <-->|"Pub/Sub Channel per Doc"| Redis
+    S1 <-->|"updates per document"| R
+    S2 <-->|"updates per document"| R
 
-    Node1 -->|"Debounced Flush (Buffer)"| Mongo
-    Node2 -->|"Debounced Flush (Buffer)"| Mongo
+    S1 -->|"debounced save, permissions"| M
+    S2 -->|"debounced save, permissions"| M
+```
+
+**Life of a keystroke**
+
+1. TipTap applies the edit to the local Yjs document, which produces a small binary update.
+2. The update goes over the WebSocket to the Hocuspocus server. The server merges it into the in-memory document and relays it to everyone else in that room.
+3. With more than one node, the node publishes the update to a Redis channel for that document. Other nodes apply it and forward it to their own clients.
+4. After a short pause in typing (2 seconds, with a 10 second ceiling), the server writes the full document state to MongoDB as a binary buffer, along with a plain-text copy for future search.
+
+**How a WebSocket connection is authorized**
+
+The browser cannot set an `Authorization` header on a WebSocket. So the client calls `GET /auth/ws-token` (authenticated by the session cookie) and receives a ticket that expires in 5 minutes and is only valid for WebSocket use. The ticket is sent during the handshake. The server looks up the user's role for that document: no access means the connection is rejected, a viewer gets a read-only connection, and an editor or owner gets a read-write connection.
+
+---
+
+## Key engineering decisions
+
+| Decision | Why | Trade-off |
+| :--- | :--- | :--- |
+| Yjs CRDT instead of Operational Transformation | Edits can arrive in any order and still converge, which makes offline editing and multi-node scaling much simpler. The server mostly relays binary updates. | CRDTs keep metadata for deleted text, so long-lived documents grow over time. |
+| Store the Yjs state as a binary buffer, not HTML or JSON | Rebuilding a document from HTML creates new client ids and clocks, which duplicates text when an offline client reconnects. | A binary field cannot be queried directly, so a separate `plainText` field is kept for search. |
+| Short-lived WebSocket ticket | Keeps the session cookie `httpOnly` while still letting the WebSocket authenticate. | One extra HTTP request before connecting. |
+| Read-only enforced by the server | Hiding buttons or setting `editable: false` is not security. The server drops update packets from viewers. | A database lookup during the WebSocket handshake. |
+| Restore as a forward edit | Rolling the stored state back to an older version makes connected clients re-send their newer edits, which undoes the restore. A new edit gets newer clocks and wins. | The server clones the old content into the live document during a transaction. |
+| Comments as marks inside the document | Character offsets drift as soon as someone types earlier in the document. A mark moves with the text it covers. | If the whole commented phrase is deleted, the thread stays in the sidebar until it is resolved. |
+| Cursors in the awareness channel, not the document | Cursor moves are frequent and temporary. Saving them would bloat history and the database. | Presence is lost on server restart, which is the intended behavior. |
+| Debounced writes to MongoDB | Many keystrokes become one write. | A hard crash could lose the last couple of seconds if no client is still connected to re-sync. |
+| Redis pub/sub between nodes | Users of one document can be connected to different nodes. | Redis is a single point of failure unless Sentinel or Cluster is added. |
+| 404 instead of 403 for documents you cannot access | Stops people from probing which document ids exist. | Slightly less specific errors while debugging. |
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+| :--- | :--- |
+| Frontend | Next.js 16 (App Router), React 19, TypeScript (strict), Tailwind CSS v4, Lucide icons |
+| Editor | TipTap 3 on ProseMirror, with Yjs collaboration and cursor extensions |
+| Real-time | Yjs, Hocuspocus (server and provider), Yjs awareness protocol |
+| Backend | Node.js, Express, Zod validation, bcryptjs, JWT in `httpOnly` cookies |
+| Database | MongoDB with Mongoose |
+| Scaling | Redis pub/sub through the Hocuspocus Redis extension, Nginx load balancing |
+| Testing | Grafana k6 (load), GitHub Actions (build and type check) |
+| Deployment | Docker, Docker Compose, Render |
+
+## Project structure
+
+```text
+apps/web              Next.js app: landing page, auth, dashboard, editor UI
+apps/server           Express REST API and Hocuspocus WebSocket server
+nginx/                Nginx config for the two-node setup
+tests/load/           k6 load test
+docker-compose.yml    MongoDB, Redis, two server nodes, Nginx
+render.yaml           Render blueprint
+.github/workflows/    CI
 ```
 
 ---
 
-## Tech Stack
+## Run it locally
 
-| Layer | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Frontend** | Next.js 16 (App Router, React 19) | Server components, static routing, and client application shell. |
-| **Language** | TypeScript (Strict Mode) | End-to-end type safety across client and server. |
-| **Rich-Text Editor** | TipTap 3 + ProseMirror | Document model, custom node schemas, and mark decorations. |
-| **Styling** | Tailwind CSS v4 + Lucide Icons | Accessible neutral design system, 4-8px radius, WCAG AA contrast. |
-| **Real-time Protocol** | Yjs + `@hocuspocus/provider` | Binary CRDT synchronization and awareness state over WebSockets. |
-| **Backend Server** | Node.js + Express 4 + Hocuspocus 4 | REST authentication, permissions middleware, and Yjs WebSocket server. |
-| **Database** | MongoDB Atlas + Mongoose 8 | Document metadata, binary CRDT state buffers, and version history. |
-| **Horizontal Scaling** | Redis 8 + `@hocuspocus/extension-redis` | Cross-instance WebSocket update broadcasting via pub/sub. |
-| **Load Balancer** | Nginx | Reverse proxy with hybrid `least_conn` (REST) and `ip_hash` (WebSockets). |
-| **Performance Testing** | Grafana k6 (v2.3.0) | High-concurrency WebSocket load testing and latency measurement. |
-| **Infrastructure** | Docker + Docker Compose | Multi-container orchestration for local and production deployment. |
+**Requirements:** Node.js 20 or newer, npm 9 or newer, and MongoDB (local or Atlas). Redis is only needed to run more than one server node.
 
----
-
-## Core Features
-
-- **Authentication & Sessions**: Password hashing using bcrypt with 10 salt rounds, signed JWTs stored in secure `httpOnly` sameSite cookies, and Zod input validation.
-- **Document Management**: Dashboard with document creation, renaming, deletion, role badges, and MongoDB indexing on `{ ownerId: 1, updatedAt: -1 }`.
-- **Rich-Text Editing**: Headings (H1 to H3), bold, italic, bullet lists, ordered lists, code blocks, links, and selection-aware toolbar.
-- **Real-Time Collaboration**: Peer synchronization via Yjs CRDTs. Concurrent keystrokes merge deterministically without central lock bottlenecks.
-- **Live Presence & Cursors**: Ephemeral cursor positions, text selection ranges, initials avatars, and deterministic color assignment derived from user identifiers.
-- **Role-Based Sharing (RBAC)**: Fine-grained roles (Owner, Editor, Viewer). Server-enforced read-only mode in Hocuspocus socket hooks and Express route middleware.
-- **Version History & Live Restore**: Automated snapshots every 10 minutes, manual named milestones, read-only preview, and forward-delta restore applied to the active in-memory document.
-- **Inline Comment Threads**: Text range annotations using ProseMirror marks (`commentId`), threaded replies, and resolve states that preserve position when preceding text shifts.
-- **Horizontal Multi-Node Scaling**: Real-time Redis pub/sub extension enabling users connected to separate server instances to edit the same room seamlessly.
-
----
-
-## Design Decisions & Trade-offs
-
-### 1. Conflict-Free Replicated Data Types (CRDTs) vs. Operational Transformation (OT)
-- **Choice**: Yjs CRDT.
-- **Rationale**: Operational Transformation (used in early Google Docs) requires every single keystroke to pass through a centralized sequencer to transform character offsets against concurrent operations. If the central sequencer lags or drops, client states diverge. Yjs uses mathematically commutative CRDT operations where edits can arrive out of order and converge to the identical state on all peers.
-- **Trade-off**: CRDTs store tombstones (metadata for deleted characters) to calculate relative positioning, requiring slightly more memory than plain strings. Yjs mitigates this with compact run-length binary encoding, yielding sub-millisecond merges.
-
-### 2. Binary State Buffer Storage in MongoDB vs. Relational/JSON Strings
-- **Choice**: MongoDB storing the Yjs state vector as a binary `Buffer` alongside an unformatted `plainText` string.
-- **Rationale**: Storing raw HTML or JSON after every keystroke requires constant schema conversion and loses the internal Lamport timestamps and client IDs needed for collaborative merging. Persisting the raw binary Y.Doc update (`Y.encodeStateAsUpdate`) allows instantaneous zero-copy hydration into memory when a document room opens.
-- **Trade-off**: Binary buffers cannot be queried with arbitrary SQL `WHERE` clauses. To enable fast text search, we maintain a secondary `plainText` string updated during debounced database flushes.
-
-### 3. Server-Enforced Security vs. Frontend Authorization
-- **Choice**: All access controls (Owner, Editor, Viewer) are enforced strictly on the server.
-- **Rationale**: The client UI is never trusted. While the frontend disables editing controls (`editable: false`), a malicious client can open DevTools or a raw WebSocket script to inject arbitrary binary update packets.
-- **Implementation**: The Hocuspocus `onAuthenticate` hook queries MongoDB to verify document permissions. For users with the `viewer` role, the server sets `connectionConfig.readOnly = true`, which causes the socket layer to silently drop all incoming update frames at the protocol boundary.
-
-### 4. Horizontal Scaling with Redis Pub/Sub and Nginx
-- **Choice**: Redis pub/sub extension for Hocuspocus combined with hybrid Nginx load balancing.
-- **Rationale**: When scaling to multiple server instances, User A on Node 1 and User B on Node 2 must collaborate on the same room. We use Redis channels keyed by document ID (`kagazai:collab:<docId>`). When Node 1 receives an edit, it publishes the update chunk to Redis; Node 2 receives the message and immediately broadcasts it to its connected clients.
-- **Load Balancing Strategy**: Nginx distributes stateless REST API traffic using `least_conn` and persistent WebSocket traffic using `ip_hash` to keep client socket reconnections stable.
-
----
-
-## Local Development Setup
-
-### Prerequisites
-- Node.js >= 18.0.0
-- npm >= 9.0.0
-- MongoDB (running locally on port 27017 or MongoDB Atlas connection URI)
-- Redis (running locally on port 6379 or Docker container)
-
-### Step 1: Install Dependencies
 ```bash
 npm install
-```
 
-### Step 2: Configure Environment Variables
-
-```bash
-# Server configuration
 cp apps/server/.env.example apps/server/.env
-
-# Web configuration
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-Ensure `apps/server/.env` contains your MongoDB and Redis connection parameters:
+Set these in `apps/server/.env`:
+
 ```env
 PORT=5001
 HOCUSPOCUS_PORT=1234
 MONGODB_URI=mongodb://localhost:27017/kagazai
 CLIENT_URL=http://localhost:3000
-JWT_SECRET=your_jwt_secret_min_32_characters_long
+JWT_SECRET=a_random_string_of_at_least_32_characters
+# Optional, only for multi-node:
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 ```
 
-### Step 3: Run Development Servers
-Start both backend API and frontend Next.js applications concurrently:
 ```bash
 npm run dev
 ```
 
-- Web Client: [http://localhost:3000](http://localhost:3000)
-- Backend REST API: [http://localhost:5001](http://localhost:5001)
-- Health Check: [http://localhost:5001/health](http://localhost:5001/health)
-- Hocuspocus WebSocket: `ws://localhost:1234`
+| Service | URL |
+| :--- | :--- |
+| Web app | http://localhost:3000 |
+| REST API | http://localhost:5001 |
+| Health check | http://localhost:5001/health |
+| WebSocket | ws://localhost:1234 |
 
-### Docker Compose Multi-Node Deployment
-To run MongoDB, Redis, two balanced backend server nodes, and Nginx locally:
+**Two server nodes with Nginx, Redis, and MongoDB:**
+
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
+## Deploying
+
+The live demo runs on Render as a single service: Express acts as the public gateway, serves the REST API and the WebSocket on the same port, and proxies page requests to Next.js. Everything shares one origin.
+
+`render.yaml` also describes a split setup with separate backend, frontend, and Redis services. In that setup the frontend and backend live on different subdomains, so production cookies use `SameSite=None; Secure`.
+
+Required environment variables: `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, and `REDIS_HOST` with `REDIS_PORT` when running more than one node.
+
 ---
 
-## Empirical Load Test Results
+## Security model
 
-KagazAi was benchmarked using Grafana k6 with WebSocket support (`tests/load/k6-collab.js`). Tests simulated concurrent clients in a single collaborative document room sending updates at realistic intervals.
+| Action | Owner | Editor | Viewer | No access |
+| :--- | :--- | :--- | :--- | :--- |
+| Open the document | Yes | Yes | Yes | 404 |
+| WebSocket connection | Read and write | Read and write | Read only | Rejected |
+| Edit content | Yes | Yes | Dropped by the server | No |
+| Rename | Yes | Yes | 403 | 404 |
+| Comment | Yes | Yes | 403 | 404 |
+| Invite, change role, remove access | Yes | 403 | 403 | 404 |
+| Delete the document | Yes | 403 | 403 | 404 |
 
-**Test Machine**: Apple MacBook Air (10-Core Apple Silicon ARM64, 16 GB Unified RAM, macOS 27.0).
+---
 
-| Metric | 10 Concurrent Clients | 50 Concurrent Clients | 100 Concurrent Clients |
+## Load test
+
+The k6 script in `tests/load/k6-collab.js` registers a user, creates a document, gets a WebSocket ticket, and then opens N WebSocket clients on the same document, each sending small updates.
+
+**Machine:** Apple MacBook Air, 10-core Apple Silicon, 16 GB RAM, with MongoDB and Redis running locally. One server node. 15 seconds per run.
+
+| Metric | 10 clients | 50 clients | 100 clients |
 | :--- | :--- | :--- | :--- |
-| **Duration** | 15 seconds | 15 seconds | 15 seconds |
-| **Total Iterations** | 50 complete | 250 complete | 500 complete |
-| **WebSocket Connections** | 50 (100% success) | 250 (100% success) | 500 (100% success) |
-| **Failed Requests / Dropped Sockets** | 0 (0.00%) | 0 (0.00%) | 0 (0.00%) |
-| **Connection Time (Average)** | 1.54 ms | 1.24 ms | 1.58 ms |
-| **Connection Time (p50 / Median)** | 2.00 ms | 1.00 ms | 1.00 ms |
-| **Connection Time (p90)** | 3.00 ms | 4.00 ms | 5.00 ms |
-| **Connection Time (p95)** | 3.00 ms | 4.00 ms | 9.00 ms |
-| **Connection Time (p99 / Max)** | 4.00 ms | 6.00 ms | 12.00 ms |
-| **HTTP Auth & Doc Setup Duration (p95)** | 109.89 ms | 107.98 ms | 108.15 ms |
-| **Throughput (Messages / Sec)** | 6.55 msgs/sec | 32.68 msgs/sec | 65.25 msgs/sec |
-| **Data Transferred** | 42 kB | 192 kB | 379 kB |
+| WebSocket connections | 50 | 250 | 500 |
+| Failed connections | 0 | 0 | 0 |
+| Connection time, average | 1.54 ms | 1.24 ms | 1.58 ms |
+| Connection time, p95 | 3 ms | 4 ms | 9 ms |
+| Connection time, max | 4 ms | 6 ms | 12 ms |
+| Auth and document setup, p95 | 109.89 ms | 107.98 ms | 108.15 ms |
+| Message throughput | 6.55 per second | 32.68 per second | 65.25 per second |
 
-*Benchmark executed using Grafana k6 with WebSocket extension simulating concurrent collaborative sessions.*
+**How to read these numbers**
+
+- They measure WebSocket connection time and message throughput on localhost. They do not measure how long an edit takes to appear on another person's screen.
+- Each client sends roughly 0.65 messages per second, so this is a light, human-paced load, not a stress test. The goal was to check that 100 clients in one room connect and stay connected on one node.
+- The limits of the system were not found. Finding them (higher rates, more clients, multiple nodes, a remote server) is the next test to run.
+
+To reproduce:
+
+```bash
+k6 run -e VUS=100 -e DURATION=15s tests/load/k6-collab.js
+```
+
+## Testing and CI
+
+GitHub Actions builds the whole monorepo and type checks it on every push. The load test above is run by hand.
 
 ---
 
-## Known Limitations
+## Known limitations
 
-1. **Redis Pub/Sub High Availability**: In the standard configuration, a single Redis instance coordinates cross-node pub/sub. If the Redis container stops, nodes continue serving their local clients but cross-instance synchronization pauses until reconnect. Production high availability requires Redis Sentinel or Redis Cluster.
-2. **Comment Range Boundaries**: Inline comments attach to continuous text spans via ProseMirror marks. Comments do not span across block node boundaries (e.g. from an unformatted paragraph into a bullet list item).
-3. **CRDT History Compaction**: Yjs maintains internal item metadata to resolve concurrent conflicts. Documents edited continuously for months with tens of thousands of character revisions will accumulate state vector size unless periodic history compaction is scheduled.
-4. **Multi-Region Latency**: Real-time cross-region collaboration is bounded by speed-of-light latency to the primary Redis cluster. Global multi-region deployments would require geo-distributed Redis edge clustering.
+1. **Live demo is one instance.** Multi-node scaling is available through Docker Compose and the Render blueprint, and was checked locally with two nodes (edits and cursors crossed between nodes, and one node was stopped mid-edit without data loss). The public demo does not run two nodes.
+2. **Redis is a single point of failure.** If Redis stops, each node keeps serving its own clients, but nodes stop syncing with each other until it returns. High availability needs Redis Sentinel or Cluster.
+3. **Load test scope.** One machine, one node, localhost, light message rate, and connection time rather than end-to-end edit latency.
+4. **Comment ranges.** A comment attaches to a continuous run of text and cannot span block boundaries, for example from a paragraph into a list item.
+5. **History growth.** Yjs keeps metadata for deleted text. Documents edited heavily for months would need periodic compaction.
+6. **Latency across regions.** Collaborators far from the server and Redis see higher latency. Multi-region deployment is not implemented.
+
+---
+
+## Author
+
+Built by Harsh ([@HarshMishra2803](https://github.com/HarshMishra2803)).
