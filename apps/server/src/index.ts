@@ -63,19 +63,32 @@ async function startServer(): Promise<void> {
     console.warn('[db] Initial database connection failed. Server will continue to run.');
   }
 
-  // Start Hocuspocus WebSocket Server
-  try {
-    const hocuspocus = createHocuspocusServer(HOCUSPOCUS_PORT);
-    await hocuspocus.listen();
-    console.log(`[hocuspocus] KagazAi WebSocket server listening on ws://localhost:${HOCUSPOCUS_PORT}`);
-  } catch (err) {
-    console.error('[hocuspocus] Failed to start WebSocket server:', err);
-  }
+  const portNumber = typeof PORT === 'string' ? parseInt(PORT, 10) : PORT;
 
-  // Start Express HTTP Server
-  app.listen(PORT, () => {
-    console.log(`[server] KagazAi server listening on http://localhost:${PORT}`);
-  });
+  if (HOCUSPOCUS_PORT === portNumber) {
+    // Cloud Single-Port Mode (e.g. Render, Railway, Heroku)
+    // Runs Express REST routes and Hocuspocus WebSockets on the exact same cloud-allocated $PORT
+    try {
+      const hocuspocus = createHocuspocusServer(portNumber, app);
+      await hocuspocus.listen();
+      console.log(`[server] KagazAi unified REST and WebSocket server listening on port ${portNumber}`);
+    } catch (err) {
+      console.error('[server] Failed to start unified server:', err);
+    }
+  } else {
+    // Dual-Port Mode (Local development, Docker Compose with Nginx)
+    try {
+      const hocuspocus = createHocuspocusServer(HOCUSPOCUS_PORT);
+      await hocuspocus.listen();
+      console.log(`[hocuspocus] KagazAi WebSocket server listening on ws://localhost:${HOCUSPOCUS_PORT}`);
+    } catch (err) {
+      console.error('[hocuspocus] Failed to start WebSocket server:', err);
+    }
+
+    app.listen(portNumber, () => {
+      console.log(`[server] KagazAi REST server listening on http://localhost:${portNumber}`);
+    });
+  }
 }
 
 startServer();

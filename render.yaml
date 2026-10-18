@@ -1,0 +1,63 @@
+services:
+  # 1. Backend Web Service: Express API + Hocuspocus WebSocket Server
+  - type: web
+    name: kagazai-server
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build --workspace=@kagazai/server
+    startCommand: npm run start --workspace=@kagazai/server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOCUSPOCUS_PORT
+        fromEnvVar: PORT
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false # Set your MongoDB Atlas connection string in Render Dashboard
+      - key: CLIENT_URL
+        fromService:
+          name: kagazai-web
+          type: web
+          property: url
+      - key: REDIS_HOST
+        fromService:
+          name: kagazai-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: kagazai-redis
+          type: redis
+          property: port
+
+  # 2. Frontend Web Service: Next.js 16 Client
+  - type: web
+    name: kagazai-web
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build --workspace=@kagazai/web
+    startCommand: npm run start --workspace=@kagazai/web
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: kagazai-server
+          type: web
+          property: url
+      - key: NEXT_PUBLIC_COLLAB_URL
+        fromService:
+          name: kagazai-server
+          type: web
+          property: url
+
+  # 3. Redis Instance for Horizontal Scaling & CRDT State Broadcasting
+  - type: redis
+    name: kagazai-redis
+    plan: free
+    region: oregon
+    ipAllowList: []

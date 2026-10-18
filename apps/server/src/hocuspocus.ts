@@ -50,7 +50,9 @@ export function extractPlainTextFromDoc(ydoc: Y.Doc): string {
   }
 }
 
-export function createHocuspocusServer(port: number = 1234): Server {
+import type { Express } from 'express';
+
+export function createHocuspocusServer(port: number = 1234, expressApp?: Express): Server {
   const redisHost = process.env.REDIS_HOST;
   const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
   const extensions: any[] = [];
@@ -72,6 +74,14 @@ export function createHocuspocusServer(port: number = 1234): Server {
     extensions,
     debounce: 2000, // Debounce document persistence to MongoDB by 2 seconds
     maxDebounce: 10000, // Force save after at most 10 seconds of continuous editing
+    ...(expressApp
+      ? {
+          async onRequest({ request, response }: any) {
+            expressApp(request, response);
+            throw null; // Prevent Hocuspocus default text response
+          },
+        }
+      : {}),
 
     async onAuthenticate(data) {
       const { token, documentName } = data;
