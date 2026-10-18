@@ -9,6 +9,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@hocuspocus/extension-redis": "^4.7.1",
     "@hocuspocus/server": "^4.7.1",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",

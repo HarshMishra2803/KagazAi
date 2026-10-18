@@ -1,4 +1,5 @@
 import { Server } from '@hocuspocus/server';
+import { Redis as RedisExtension } from '@hocuspocus/extension-redis';
 import jwt from 'jsonwebtoken';
 import * as Y from 'yjs';
 import mongoose from 'mongoose';
@@ -50,8 +51,25 @@ export function extractPlainTextFromDoc(ydoc: Y.Doc): string {
 }
 
 export function createHocuspocusServer(port: number = 1234): Server {
+  const redisHost = process.env.REDIS_HOST;
+  const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+  const extensions: any[] = [];
+
+  if (redisHost) {
+    console.log(`[hocuspocus] Enabling Redis pub/sub extension on ${redisHost}:${redisPort} (port ${port})`);
+    extensions.push(
+      new RedisExtension({
+        host: redisHost,
+        port: redisPort,
+        prefix: 'kagazai:collab',
+        identifier: `server_${port}_${Math.random().toString(36).substring(2, 7)}`,
+      })
+    );
+  }
+
   const server = new Server({
     port,
+    extensions,
     debounce: 2000, // Debounce document persistence to MongoDB by 2 seconds
     maxDebounce: 10000, // Force save after at most 10 seconds of continuous editing
 

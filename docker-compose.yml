@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: kagazai-mongodb
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - kagazai-net
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: kagazai-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - kagazai-net
+
+  server1:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: kagazai-server-1
+    restart: unless-stopped
+    environment:
+      - PORT=5001
+      - HOCUSPOCUS_PORT=1234
+      - MONGODB_URI=mongodb://mongodb:27017/kagazai
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=kagazai_development_secret_key_sde_interview_2026
+      - CLIENT_URL=http://localhost:3000
+    ports:
+      - '5001:5001'
+      - '1234:1234'
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - kagazai-net
+
+  server2:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: kagazai-server-2
+    restart: unless-stopped
+    environment:
+      - PORT=5002
+      - HOCUSPOCUS_PORT=1235
+      - MONGODB_URI=mongodb://mongodb:27017/kagazai
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=kagazai_development_secret_key_sde_interview_2026
+      - CLIENT_URL=http://localhost:3000
+    ports:
+      - '5002:5002'
+      - '1235:1235'
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - kagazai-net
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: kagazai-nginx
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server1
+      - server2
+    networks:
+      - kagazai-net
+
+volumes:
+  mongo_data:
+  redis_data:
+
+networks:
+  kagazai-net:
+    driver: bridge
