@@ -163,3 +163,26 @@ authRouter.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Respon
     res.status(500).json({ error: 'Failed to retrieve session' });
   }
 });
+
+// GET /auth/ws-token - Issue short-lived ticket for WebSocket connection
+authRouter.get('/ws-token', requireAuth, (req: AuthenticatedRequest, res: Response): void => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const secret = process.env.JWT_SECRET || 'kagazai_development_secret_key_32_characters_minimum';
+  const token = jwt.sign(
+    {
+      id: req.user.id,
+      email: req.user.email,
+      name: req.user.name,
+      purpose: 'websocket',
+    },
+    secret,
+    { expiresIn: '2h' }
+  );
+
+  res.status(200).json({ token });
+});
+

@@ -7,6 +7,7 @@ import fs from 'fs';
 import { connectDB, isDbConnected } from './db';
 import { authRouter } from './routes/auth';
 import { documentRouter } from './routes/documents';
+import { createHocuspocusServer } from './hocuspocus';
 
 // Monorepo-aware .env loader: checks cwd, apps/server directory, and parent paths
 const envCandidates = [
@@ -25,6 +26,7 @@ for (const envFile of envCandidates) {
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const HOCUSPOCUS_PORT = parseInt(process.env.HOCUSPOCUS_PORT || '1234', 10);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/kagazai';
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
@@ -59,6 +61,16 @@ async function startServer(): Promise<void> {
     console.warn('[db] Initial database connection failed. Server will continue to run.');
   }
 
+  // Start Hocuspocus WebSocket Server
+  try {
+    const hocuspocus = createHocuspocusServer(HOCUSPOCUS_PORT);
+    await hocuspocus.listen();
+    console.log(`[hocuspocus] KagazAi WebSocket server listening on ws://localhost:${HOCUSPOCUS_PORT}`);
+  } catch (err) {
+    console.error('[hocuspocus] Failed to start WebSocket server:', err);
+  }
+
+  // Start Express HTTP Server
   app.listen(PORT, () => {
     console.log(`[server] KagazAi server listening on http://localhost:${PORT}`);
   });

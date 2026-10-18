@@ -4,7 +4,7 @@ import React, { use, useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Editor } from '@/components/Editor';
+import { CollaborativeEditor } from '@/components/CollaborativeEditor';
 import {
   ArrowLeft,
   AlertCircle,
@@ -12,6 +12,7 @@ import {
   FileText,
   Clock,
   LogOut,
+  Users,
 } from 'lucide-react';
 
 interface DocumentData {
@@ -34,6 +35,7 @@ function DocumentView({
   const { user, loading: authLoading, logout } = useAuth();
 
   const [document, setDocument] = useState<DocumentData | null>(null);
+  const [wsToken, setWsToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,12 +46,13 @@ function DocumentView({
     }
   }, [user, authLoading, router]);
 
-  const fetchDocument = useCallback(async () => {
+  const fetchDocumentAndToken = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/documents/${id}`, {
+      // 1. Fetch document metadata
+      const docRes = await fetch(`${API_URL}/documents/${id}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -57,16 +60,29 @@ function DocumentView({
         },
       });
 
-      if (!res.ok) {
-        if (res.status === 404) {
+      if (!docRes.ok) {
+        if (docRes.status === 404) {
           throw new Error('Document not found or you do not have permission to view it.');
         }
-        const data = await res.json();
+        const data = await docRes.json();
         throw new Error(data.error || 'Failed to load document');
       }
 
-      const data = await res.json();
-      setDocument(data.document);
+      const docData = await docRes.json();
+      setDocument(docData.document);
+
+      // 2. Fetch WebSocket auth token for Hocuspocus
+      const tokenRes = await fetch(`${API_URL}/auth/ws-token`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!tokenRes.ok) {
+        throw new Error('Failed to obtain real-time session ticket.');
+      }
+
+      const tokenData = await tokenRes.json();
+      setWsToken(tokenData.token);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -80,9 +96,9 @@ function DocumentView({
 
   useEffect(() => {
     if (user && id) {
-      fetchDocument();
+      fetchDocumentAndToken();
     }
-  }, [user, id, fetchDocument]);
+  }, [user, id, fetchDocumentAndToken]);
 
   const formatDate = (dateStr: string) => {
     try {
@@ -97,12 +113,12 @@ function DocumentView({
     }
   };
 
-  if (authLoading || (loading && !document && !error)) {
+  if (authLoading || (loading && (!document || !wsToken) && !error)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-600">
         <div className="flex items-center gap-2.5 text-sm">
           <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
-          <span>Opening document...</span>
+          <span>Opening collaborative session...</span>
         </div>
       </div>
     );
@@ -135,7 +151,7 @@ function DocumentView({
     );
   }
 
-  if (!document || !user) {
+  if (!document || !user || !wsToken) {
     return null;
   }
 
@@ -160,7 +176,7 @@ function DocumentView({
                   {document.title}
                 </h1>
                 <span className="text-[10px] uppercase font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded shrink-0">
-                  Prompt 3
+                  Prompt 4
                 </span>
               </div>
               <div className="flex items-center gap-1 text-[11px] text-neutral-500">
@@ -171,9 +187,9 @@ function DocumentView({
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-neutral-500 font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              Rich-text Ready
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-neutral-600 font-medium bg-neutral-100 px-2 py-1 rounded">
+              <Users className="w-3.5 h-3.5 text-neutral-500" />
+              CRDT Sync (Yjs)
             </span>
 
             <div className="h-4 w-px bg-neutral-200 hidden sm:block"></div>
@@ -194,10 +210,11 @@ function DocumentView({
         </div>
       </header>
 
-      {/* Editor Body */}
+      {/* Collaborative Editor Body */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
-        <Editor
-          initialContent={`<h1>${document.title}</h1><p>Start writing notes, outlines, or reports here. Use the toolbar above or keyboard shortcuts to format text.</p>`}
+        <CollaborativeEditor
+          documentId={document._id}
+          wsToken={wsToken}
         />
       </main>
     </div>
@@ -215,7 +232,7 @@ export default function DocumentPage({
         <div className="min-h-screen flex items-center justify-center bg-neutral-50 text-neutral-600">
           <div className="flex items-center gap-2.5 text-sm">
             <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
-            <span>Opening document...</span>
+            <span>Opening collaborative session...</span>
           </div>
         </div>
       }
