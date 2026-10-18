@@ -2,8 +2,6 @@
 
 KagazAi is a real-time collaborative document editor for students and small teams who write notes, assignments, and reports together. It synchronizes text edits using conflict-free replicated data types (CRDTs) over WebSockets, renders live presence with deterministic user cursors, provides granular role-based sharing permissions, captures automated version history snapshots, and scales horizontally across multiple backend instances via Redis pub/sub.
 
-**Production Deployment & Setup**: [DEPLOYMENT.md](DEPLOYMENT.md) | **60-Second Demo Script**: [DEMO.md](DEMO.md) | **Load Test Report**: [LOADTEST.md](LOADTEST.md)
-
 ---
 
 ## Architecture Overview
@@ -176,7 +174,7 @@ KagazAi was benchmarked using Grafana k6 with WebSocket support (`tests/load/k6-
 | **Throughput (Messages / Sec)** | 6.55 msgs/sec | 32.68 msgs/sec | 65.25 msgs/sec |
 | **Data Transferred** | 42 kB | 192 kB | 379 kB |
 
-*Note: For the complete methodology, execution parameters, and reproduction commands, review [LOADTEST.md](LOADTEST.md).*
+*Benchmark executed using Grafana k6 with WebSocket extension simulating concurrent collaborative sessions.*
 
 ---
 

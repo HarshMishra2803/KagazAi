@@ -41,3 +41,11 @@ Thumbs.db
 
 # Private docs folder (mandatory local notes, never committed)
 docs/
+
+# Markdown documentation files (keep only root README.md on GitHub)
+AGENTS.md
+**/AGENTS.md
+DEMO.md
+DEPLOYMENT.md
+LOADTEST.md
+apps/*/README.md
