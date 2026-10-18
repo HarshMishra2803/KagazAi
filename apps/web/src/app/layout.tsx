@@ -1,6 +1,19 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-mono',
+});
 
 export const viewport: Viewport = {
   themeColor: '#0f172a',
@@ -80,7 +93,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="min-h-screen bg-neutral-50 text-neutral-900 antialiased font-sans selection:bg-neutral-200 selection:text-neutral-900">
+      <body className={`${inter.variable} ${jetbrainsMono.variable} min-h-screen bg-neutral-50 text-neutral-900 antialiased font-sans selection:bg-neutral-200 selection:text-neutral-900`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
