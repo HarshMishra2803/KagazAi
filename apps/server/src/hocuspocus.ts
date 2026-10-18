@@ -1,5 +1,8 @@
 import { Server } from '@hocuspocus/server';
 import jwt from 'jsonwebtoken';
+import * as Y from 'yjs';
+import mongoose from 'mongoose';
+import { DocumentModel } from './models/Document';
 
 export interface HocuspocusUserContext {
   user: {
@@ -9,9 +12,41 @@ export interface HocuspocusUserContext {
   };
 }
 
+/**
+ * Recursively extracts plain text from a Y.Doc's default XML fragment.
+ * Traverses ProseMirror XML elements and text nodes to generate searchable text.
+ */
+export function extractPlainTextFromDoc(ydoc: Y.Doc): string {
+  try {
+    const fragment = ydoc.getXmlFragment('default');
+    const extract = (item: any): string => {
+      if (!item) return '';
+      if (item instanceof Y.XmlText) {
+        return item.toString();
+      }
+      if (item instanceof Y.XmlElement || item instanceof Y.XmlFragment) {
+        const parts: string[] = [];
+        for (let i = 0; i < item.length; i++) {
+          const childText = extract(item.get(i));
+          if (childText) parts.push(childText);
+        }
+        return parts.join('\n');
+      }
+      return '';
+    };
+    return extract(fragment).trim();
+  } catch (err) {
+    console.warn('[hocuspocus] Failed to extract plain text from Y.Doc:', err);
+    return '';
+  }
+}
+
 export function createHocuspocusServer(port: number = 1234): Server {
   return new Server({
     port,
+    debounce: 2000, // Debounce document persistence to MongoDB by 2 seconds
+    maxDebounce: 10000, // Force save after at most 10 seconds of continuous editing
+
     async onAuthenticate(data) {
       const { token, documentName } = data;
 
@@ -54,9 +89,68 @@ export function createHocuspocusServer(port: number = 1234): Server {
         throw new Error('Invalid or expired authentication token');
       }
     },
+
+    async onLoadDocument(data) {
+      const { documentName } = data;
+
+      if (!mongoose.isValidObjectId(documentName)) {
+        console.warn(`[hocuspocus] Invalid document ID requested in onLoadDocument: ${documentName}`);
+        return null;
+      }
+
+      try {
+        const doc = await DocumentModel.findById(documentName);
+
+        if (doc && doc.content && doc.content.length > 0) {
+          console.log(`[hocuspocus] Loaded document ${documentName} from MongoDB (${doc.content.length} bytes)`);
+          // Return binary state as Uint8Array for Hocuspocus to initialize the Y.Doc
+          return new Uint8Array(doc.content);
+        }
+
+        console.log(`[hocuspocus] New document or empty content for ${documentName}; starting fresh Y.Doc`);
+        return null;
+      } catch (err) {
+        console.error(`[hocuspocus] Error loading document ${documentName} from MongoDB:`, err);
+        throw err;
+      }
+    },
+
+    async onStoreDocument(data) {
+      const { documentName, document } = data;
+
+      if (!mongoose.isValidObjectId(documentName)) {
+        console.warn(`[hocuspocus] Invalid document ID in onStoreDocument: ${documentName}`);
+        return;
+      }
+
+      try {
+        // Encode Y.Doc into compact binary update
+        const stateUpdate = Y.encodeStateAsUpdate(document);
+        const buffer = Buffer.from(stateUpdate);
+        const plainText = extractPlainTextFromDoc(document);
+
+        await DocumentModel.findByIdAndUpdate(
+          documentName,
+          {
+            content: buffer,
+            plainText,
+          },
+          { new: true }
+        );
+
+        console.log(
+          `[hocuspocus] Persisted document ${documentName} to MongoDB (${buffer.length} bytes, ${plainText.length} text chars)`
+        );
+      } catch (err) {
+        console.error(`[hocuspocus] Error persisting document ${documentName} to MongoDB:`, err);
+        throw err;
+      }
+    },
+
     async onConnect(data) {
       console.log(`[hocuspocus] Client connected to document: ${data.documentName}`);
     },
+
     async onDisconnect(data) {
       console.log(`[hocuspocus] Client disconnected from document: ${data.documentName}`);
     },

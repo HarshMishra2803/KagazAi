@@ -3,6 +3,8 @@ import { Schema, model, Document as MongooseDocument, Types } from 'mongoose';
 export interface IDocument extends MongooseDocument {
   title: string;
   ownerId: Types.ObjectId;
+  content?: Buffer | null;
+  plainText?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +23,14 @@ const documentSchema = new Schema<IDocument>(
       ref: 'User',
       required: true,
       index: true, // Indexed for O(log N) query performance per owner
+    },
+    content: {
+      type: Buffer,
+      default: null, // Binary Yjs CRDT state vector
+    },
+    plainText: {
+      type: String,
+      default: '', // Plain-text copy for future search indexing
     },
   },
   {
