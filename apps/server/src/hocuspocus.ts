@@ -4,6 +4,7 @@ import * as Y from 'yjs';
 import mongoose from 'mongoose';
 import { DocumentModel } from './models/Document';
 import { PermissionModel } from './models/Permission';
+import { VersionModel } from './models/Version';
 
 export interface HocuspocusUserContext {
   user: {
@@ -11,6 +12,12 @@ export interface HocuspocusUserContext {
     email: string;
     name: string;
   };
+}
+
+export let hocuspocusServerInstance: Server | null = null;
+
+export function getHocuspocusServer(): Server | null {
+  return hocuspocusServerInstance;
 }
 
 /**
@@ -43,7 +50,7 @@ export function extractPlainTextFromDoc(ydoc: Y.Doc): string {
 }
 
 export function createHocuspocusServer(port: number = 1234): Server {
-  return new Server({
+  const server = new Server({
     port,
     debounce: 2000, // Debounce document persistence to MongoDB by 2 seconds
     maxDebounce: 10000, // Force save after at most 10 seconds of continuous editing
@@ -172,6 +179,27 @@ export function createHocuspocusServer(port: number = 1234): Server {
         console.log(
           `[hocuspocus] Persisted document ${documentName} to MongoDB (${buffer.length} bytes, ${plainText.length} text chars)`
         );
+
+        // Automated version snapshot: create at most every 10 minutes during active editing
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+        const recentVersion = await VersionModel.findOne({
+          documentId: documentName,
+          createdAt: { $gte: tenMinutesAgo },
+        });
+
+        if (!recentVersion) {
+          const doc = await DocumentModel.findById(documentName).select('ownerId');
+          if (doc) {
+            await VersionModel.create({
+              documentId: documentName,
+              createdBy: doc.ownerId,
+              label: 'Auto-save version',
+              state: buffer,
+              plainText,
+            });
+            console.log(`[hocuspocus] Auto-snapshot version created for document: ${documentName}`);
+          }
+        }
       } catch (err) {
         console.error(`[hocuspocus] Error persisting document ${documentName} to MongoDB:`, err);
         throw err;
@@ -186,4 +214,80 @@ export function createHocuspocusServer(port: number = 1234): Server {
       console.log(`[hocuspocus] Client disconnected from document: ${data.documentName}`);
     },
   });
+
+  hocuspocusServerInstance = server;
+  return server;
+}
+
+/**
+ * Recursively clones a ProseMirror Yjs XML node/element/text to apply cleanly into a destination document.
+ */
+export function cloneYjsItem(item: any): any {
+  if (item instanceof Y.XmlElement) {
+    const el = new Y.XmlElement(item.nodeName);
+    const attrs = item.getAttributes();
+    for (const k in attrs) {
+      el.setAttribute(k, attrs[k]);
+    }
+    const children: any[] = [];
+    for (let i = 0; i < item.length; i++) {
+      children.push(cloneYjsItem(item.get(i)));
+    }
+    el.insert(0, children.filter(Boolean));
+    return el;
+  } else if (item instanceof Y.XmlText) {
+    const text = new Y.XmlText();
+    text.applyDelta(item.toDelta());
+    return text;
+  }
+  return null;
+}
+
+/**
+ * Restores a document to a historical version by applying its content as a forward edit
+ * on the live in-memory Y.Doc. This ensures all currently connected WebSocket peers
+ * receive the update in real time without disconnection.
+ */
+export async function restoreVersionToLiveDocument(
+  documentId: string,
+  versionState: Buffer,
+  restoredByUserId: string
+): Promise<void> {
+  // 1. Rehydrate historical Y.Doc from version binary update
+  const historicalDoc = new Y.Doc();
+  Y.applyUpdate(historicalDoc, new Uint8Array(versionState));
+  const historicalFrag = historicalDoc.getXmlFragment('default');
+  const plainText = extractPlainTextFromDoc(historicalDoc);
+
+  const server = getHocuspocusServer();
+  if (server) {
+    // Open direct connection to live room on Hocuspocus server
+    const connection = await server.hocuspocus.openDirectConnection(documentId, {
+      user: { id: restoredByUserId, name: 'System Restore', email: 'system@kagaz.ai' },
+    });
+
+    try {
+      await connection.transact((liveDoc: Y.Doc) => {
+        const liveFrag = liveDoc.getXmlFragment('default');
+        // Clear current live contents
+        liveFrag.delete(0, liveFrag.length);
+
+        // Clone historical nodes into live fragment as a forward delta
+        const clones: any[] = [];
+        for (let i = 0; i < historicalFrag.length; i++) {
+          clones.push(cloneYjsItem(historicalFrag.get(i)));
+        }
+        liveFrag.insert(0, clones.filter(Boolean));
+      });
+    } finally {
+      connection.disconnect();
+    }
+  } else {
+    // Fallback if Hocuspocus server instance is not yet ready
+    const buffer = Buffer.from(versionState);
+    await DocumentModel.findByIdAndUpdate(documentId, {
+      content: buffer,
+      plainText,
+    });
+  }
 }

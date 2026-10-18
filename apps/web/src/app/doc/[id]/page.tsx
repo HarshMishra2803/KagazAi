@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { CollaborativeEditor } from '@/components/CollaborativeEditor';
 import { ShareDialog } from '@/components/ShareDialog';
+import { VersionHistory } from '@/components/VersionHistory';
 import {
   ArrowLeft,
   AlertCircle,
@@ -16,6 +17,7 @@ import {
   Users,
   Share2,
   Eye,
+  History,
 } from 'lucide-react';
 
 interface DocumentData {
@@ -43,6 +45,7 @@ function DocumentView({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -224,6 +227,17 @@ function DocumentView({
               </button>
             ) : null}
 
+            {/* Version History Button */}
+            <button
+              type="button"
+              onClick={() => setIsHistoryOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-700 bg-white border border-neutral-300 hover:bg-neutral-50 rounded-md transition-colors focus:outline-hidden focus:ring-2 focus:ring-neutral-900"
+              title="View version history and restore snapshots"
+            >
+              <History className="w-3.5 h-3.5 text-neutral-600" />
+              <span className="hidden sm:inline">History</span>
+            </button>
+
             <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-neutral-600 font-medium bg-neutral-100 px-2 py-1 rounded">
               <Users className="w-3.5 h-3.5 text-neutral-500" />
               CRDT Sync (Yjs)
@@ -262,6 +276,14 @@ function DocumentView({
         isOpen={isShareOpen}
         onClose={() => setIsShareOpen(false)}
         currentUserRole={document.role || 'viewer'}
+      />
+
+      {/* Version History Drawer */}
+      <VersionHistory
+        documentId={document._id}
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        canManageVersions={document.role === 'owner' || document.role === 'editor'}
       />
     </div>
   );
