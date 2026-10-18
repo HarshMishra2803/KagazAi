@@ -36,7 +36,9 @@ interface VersionHistoryProps {
   onVersionRestored?: () => void;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+import { getApiUrl } from '../utils/config';
+
+const API_URL = getApiUrl();
 
 export function VersionHistory({
   documentId,

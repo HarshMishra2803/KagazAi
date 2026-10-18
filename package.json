@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "concurrently -n \"server,web\" -c \"blue,green\" \"npm run dev --workspace=apps/server\" \"npm run dev --workspace=apps/web\"",
     "build": "npm run build --workspaces",
-    "start": "concurrently -n \"server,web\" -c \"blue,green\" \"npm run start --workspace=apps/server\" \"npm run start --workspace=apps/web\""
+    "start": "concurrently -n \"server,web\" -c \"blue,green\" \"npm run start --workspace=apps/server\" \"PORT=3000 PORT_WEB=3000 npm run start --workspace=apps/web\""
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

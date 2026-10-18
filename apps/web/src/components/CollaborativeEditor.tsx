@@ -11,6 +11,7 @@ import { CollaborationCursor } from './CollaborationCursorExtension';
 import { CommentMark } from './CommentMarkExtension';
 import { useAuth } from '../context/AuthContext';
 import { getDeterministicColor, getInitials } from '../utils/presence';
+import { getCollabUrl } from '../utils/config';
 import { Wifi, WifiOff, Loader2 } from 'lucide-react';
 
 interface CollaborativeEditorProps {
@@ -315,13 +316,7 @@ export function CollaborativeEditor({
   useEffect(() => {
     if (!documentId || !wsToken) return;
 
-    let collabUrl = process.env.NEXT_PUBLIC_COLLAB_URL || 'ws://localhost:1234';
-    if (collabUrl.startsWith('https://')) {
-      collabUrl = collabUrl.replace(/^https:\/\//, 'wss://');
-    } else if (collabUrl.startsWith('http://')) {
-      collabUrl = collabUrl.replace(/^http:\/\//, 'ws://');
-    }
-
+    const collabUrl = getCollabUrl();
     const p = new HocuspocusProvider({
       url: collabUrl,
       name: documentId,
